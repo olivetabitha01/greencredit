@@ -1457,16 +1457,22 @@ function sendOTP() {
   const ph = document.getElementById('phone-in').value.trim();
   if (ph.length < 10) { toast('⚠️', 'Enter valid number'); return; }
 
-  const fullPhone = '+91' + ph;
+  const fullPhone = ph.startsWith('+') ? ph : 
+                  ph.startsWith('91') && ph.length === 12 ? '+' + ph : 
+                  '+91' + ph;
   APP.phone = fullPhone;
   document.getElementById('ph-disp').textContent = ph;
 
-  // Setup invisible recaptcha
-  if (!window.recaptchaVerifier) {
-    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-      size: 'invisible'
-    });
-  }
+  // Setup invisible recaptcha — clear old one first
+  try {
+    if (window.recaptchaVerifier) {
+      window.recaptchaVerifier.clear();
+    }
+  } catch(e) {}
+  window.recaptchaVerifier = null;
+  window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier(
+    'recaptcha-container', { size: 'invisible' }
+  );
 
   auth.signInWithPhoneNumber(fullPhone, window.recaptchaVerifier)
     .then(result => {
