@@ -1096,20 +1096,52 @@ function renderMembersList(){
       ${m.role!=='owner'?`<button class="btn-danger" onclick="removeMember(${i})">Remove</button>`:''}
     </div>`).join('');
 }
-function addMember(){
-  const name=document.getElementById('new-name').value.trim();
-  const phone=document.getElementById('new-phone').value.trim().replace(/\D/g,'');
-  const role=document.getElementById('new-role').value;
-  const rel=document.getElementById('new-relation').value;
-  if(!name||phone.length<10){toast('⚠️','Enter name and valid phone');return}
-  const h=APP.houses[APP.currentHouse];
-  const colors=['#34d364','#38bdf8','#fbbf24','#f97316','#8b5cf6','#f43f5e','#2dd4bf'];
-  h.memberList.push({name,phone,role,relation:rel,status:'pending',color:colors[h.memberList.length%colors.length]});
-  h.members=h.memberList.length;
-  const dm=document.getElementById('dash-members');if(dm)dm.textContent=h.members+' members';
-  document.getElementById('new-name').value='';document.getElementById('new-phone').value='';
+async function addMember(){
+  const name = document.getElementById('new-name').value.trim();
+  const phone = document.getElementById('new-phone').value.trim().replace(/\D/g,'');
+  const role = document.getElementById('new-role').value;
+  const rel = document.getElementById('new-relation').value;
+  if(!name || phone.length < 10){toast('⚠️','Enter name and valid phone');return}
+
+  const h = APP.houses[APP.currentHouse];
+  const fullPhone = '+91' + phone;
+  const colors = ['#34d364','#38bdf8','#fbbf24','#f97316','#8b5cf6','#f43f5e','#2dd4bf'];
+
+  // Update local APP first
+  h.memberList.push({name, phone, role, relation:rel, status:'pending', color:colors[h.memberList.length%colors.length]});
+  h.members = h.memberList.length;
+  const dm = document.getElementById('dash-members');
+  if(dm) dm.textContent = h.members + ' members';
+  document.getElementById('new-name').value = '';
+  document.getElementById('new-phone').value = '';
   renderMembersList();
-  toast('📱',`Invite sent to ${name} — OTP will link them to ${h.id}`);
+
+  // ── SAVE TO FIRESTORE ──
+  try {
+    // 1. Add phone to house's member list
+    await db.collection('houses').doc(h.id).update({
+      member_phones: firebase.firestore.FieldValue.arrayUnion(fullPhone),
+      member_count: h.members
+    });
+
+    // 2. Create user → house mapping so they can log in
+    await db.collection('users').doc(fullPhone).set({
+      phone: fullPhone,
+      name: name,
+      house_id: h.id,
+      role: role,
+      relation: rel,
+      status: 'pending',
+      added_by: APP.phone,
+      added_at: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    toast('📱', `✅ ${name} added! They can now log in with ${phone} to see this house.`);
+
+  } catch(err) {
+    console.error('Error adding member:', err);
+    toast('⚠️', 'Added locally — Firebase sync failed');
+  }
 }
 function removeMember(idx){
   const h=APP.houses[APP.currentHouse];
