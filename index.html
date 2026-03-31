@@ -1418,23 +1418,16 @@ function sendOTP() {
   const ph = document.getElementById('phone-in').value.trim();
   if (ph.length < 10) { toast('⚠️', 'Enter valid number'); return; }
 
-  // Handle if user types with or without +91
-  const fullPhone = ph.startsWith('+91') ? ph : 
-                  ph.startsWith('91') ? '+' + ph : 
-                  '+91' + ph;
+  const fullPhone = '+91' + ph;
   APP.phone = fullPhone;
   document.getElementById('ph-disp').textContent = ph;
 
   // Setup invisible recaptcha
- try {
-  if (window.recaptchaVerifier) {
-    window.recaptchaVerifier.clear();
-    window.recaptchaVerifier = null;
+  if (!window.recaptchaVerifier) {
+    window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+      size: 'invisible'
+    });
   }
-  } catch(e) {}
-  window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-    size: 'invisible'
-   });
 
   auth.signInWithPhoneNumber(fullPhone, window.recaptchaVerifier)
     .then(result => {
