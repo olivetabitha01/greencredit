@@ -3,33 +3,7 @@ services:
     name: greencredit
     env: static
     staticPublishPath: .
-```
-
-Click **Commit new file**.
-
----
-
-**File 2 — Already done ✅**
-Your `index.html` is already there.
-
----
-
-## Step 2 — Connect to Render
-
-1. Go to [render.com](https://render.com) → log in with GitHub
-2. Click **"New +"** → **"Static Site"**
-3. Select your `greencredit` repo
-4. Fill in:
-   - **Name:** `greencredit`
-   - **Branch:** `main`
-   - **Build Command:** *(leave completely empty)*
-   - **Publish directory:** `.` (just a dot)
-5. Click **"Create Static Site"**
-
----
-
-## Step 3 — Wait 2 minutes
-
-Render will give you a URL like:
-```
-https://greencredit-1.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
