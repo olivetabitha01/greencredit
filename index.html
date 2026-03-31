@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GreenCredit v4 — Full Platform</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Satoshi:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#060d08;--bg2:#0c1810;--bg3:#111f14;--card:#152019;--card2:#1a2a1e;
+  --border:rgba(52,211,100,0.14);--border2:rgba(52,211,100,0.28);
+  --emerald:#34d364;--lime:#a3e635;--teal:#2dd4bf;--cyan:#22d3ee;
+  --amber:#fbbf24;--orange:#f97316;--rose:#f43f5e;--violet:#8b5cf6;--sky:#38bdf8;
+  --text:#f0fdf4;--text2:#86efac;--muted:#4b7a57;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Satoshi',sans-serif;overflow-x:hidden}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--emerald);border-radius:2px}
+.page{display:none;min-height:100vh;flex-direction:column}.page.active{display:flex}
+
+/* LOGIN */
+#page-login{align-items:center;justify-content:center;position:relative;overflow:hidden}
+.login-aurora{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 55% 40% at 20% 20%,rgba(52,211,100,0.12) 0%,transparent 60%),radial-gradient(ellipse 40% 50% at 80% 70%,rgba(45,212,191,0.10) 0%,transparent 60%),radial-gradient(ellipse 30% 30% at 50% 90%,rgba(163,230,53,0.06) 0%,transparent 60%)}
+.login-dots{position:absolute;inset:0;background-image:radial-gradient(circle,rgba(52,211,100,0.15) 1px,transparent 1px);background-size:36px 36px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 72%)}
+.login-card{position:relative;z-index:2;width:100%;max-width:440px;background:linear-gradient(145deg,rgba(21,32,25,0.97),rgba(11,24,15,0.97));border:1px solid var(--border2);border-radius:28px;padding:48px 40px;box-shadow:0 0 100px rgba(52,211,100,0.08),0 40px 80px rgba(0,0,0,0.5);backdrop-filter:blur(20px)}
+.brand{display:flex;align-items:center;gap:14px;margin-bottom:36px}
+.brand-icon{width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#1a7a3a,var(--emerald));display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 0 30px rgba(52,211,100,0.4)}
+.brand-name{font-family:'Cabinet Grotesk',sans-serif;font-size:24px;font-weight:900;background:linear-gradient(90deg,var(--emerald),var(--lime));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.brand-tag{font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.lh{font-family:'Cabinet Grotesk',sans-serif;font-size:30px;font-weight:900;margin-bottom:6px;background:linear-gradient(135deg,#fff,var(--text2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.ls{font-size:14px;color:var(--muted);margin-bottom:28px;line-height:1.6}
+.fl{margin-bottom:16px}
+.fl label{display:block;font-size:11px;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:7px;font-weight:600}
+.inp{width:100%;padding:13px 16px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:13px;color:var(--text);font-size:14px;font-family:'Satoshi',sans-serif;outline:none;transition:border-color .2s,box-shadow .2s}
+.inp:focus{border-color:var(--emerald);box-shadow:0 0 0 3px rgba(52,211,100,0.12)}
+.inp::placeholder{color:var(--muted)}
+select.inp option{background:var(--bg2)}
+textarea.inp{resize:none}
+.btn-p{width:100%;padding:15px;background:linear-gradient(135deg,#1e6b37,var(--emerald));border:none;border-radius:13px;color:#000;font-family:'Cabinet Grotesk',sans-serif;font-size:15px;font-weight:900;cursor:pointer;transition:transform .15s,box-shadow .2s;letter-spacing:.2px}
+.btn-p:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(52,211,100,0.35)}
+.btn-sm{padding:10px 18px;background:linear-gradient(135deg,#1e6b37,var(--emerald));border:none;border-radius:10px;color:#000;font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:900;cursor:pointer;transition:transform .15s,box-shadow .2s;white-space:nowrap}
+.btn-sm:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(52,211,100,0.3)}
+.btn-outline{padding:10px 16px;background:none;border:1px solid var(--emerald);border-radius:10px;color:var(--emerald);font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:800;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-outline:hover{background:rgba(52,211,100,0.08)}
+.btn-danger{padding:10px 16px;background:none;border:1px solid rgba(244,63,94,0.4);border-radius:10px;color:var(--rose);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-danger:hover{background:rgba(244,63,94,0.08)}
+.otp-boxes{display:flex;gap:10px;margin-bottom:18px}
+.otp-box{flex:1;text-align:center;font-size:26px;font-weight:900;padding:13px 8px;letter-spacing:2px;border-radius:13px}
+.otp-hint{text-align:center;font-size:12px;color:var(--muted);margin-top:10px}
+.otp-hint span{color:var(--lime);cursor:pointer;font-weight:700}
+#otp-step{display:none}
+
+/* NAV */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:64px;background:rgba(6,13,8,0.95);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.nav-brand{display:flex;align-items:center;gap:10px;cursor:pointer}
+.nav-brand .bi{width:36px;height:36px;font-size:16px;border-radius:10px;background:linear-gradient(135deg,#1a7a3a,var(--emerald));display:flex;align-items:center;justify-content:center}
+.nav-brand span{font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:18px;background:linear-gradient(90deg,var(--emerald),var(--lime));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-tabs{display:flex;gap:2px}
+.nav-tab{display:flex;align-items:center;gap:5px;padding:8px 12px;border-radius:11px;font-size:11px;font-weight:600;cursor:pointer;color:var(--muted);transition:all .2s;border:none;background:none}
+.nav-tab:hover{color:var(--text);background:rgba(52,211,100,0.07)}
+.nav-tab.active{color:var(--emerald);background:rgba(52,211,100,0.12)}
+.nav-right{display:flex;align-items:center;gap:8px}
+.house-switcher{display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--card2);border:1px solid var(--border);border-radius:20px;cursor:pointer;font-size:12px;font-weight:700;transition:all .2s;position:relative}
+.house-switcher:hover{border-color:var(--emerald)}
+.live-dot{width:7px;height:7px;background:var(--emerald);border-radius:50%;animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(52,211,100,0.5)}50%{box-shadow:0 0 0 8px rgba(52,211,100,0)}}
+
+/* HOUSE PANEL */
+.house-panel{position:fixed;top:70px;right:16px;z-index:200;background:var(--card);border:1px solid var(--border2);border-radius:18px;padding:16px;min-width:300px;box-shadow:0 24px 60px rgba(0,0,0,0.6);display:none}
+.house-panel.open{display:block;animation:slideDown .2s}
+@keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+.hp-title{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:10px}
+.hp-house{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;cursor:pointer;transition:background .15s;border:1px solid transparent;margin-bottom:4px}
+.hp-house:hover{background:rgba(52,211,100,0.07)}
+.hp-house.sel{background:rgba(52,211,100,0.1);border-color:rgba(52,211,100,0.25)}
+.hp-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--bg2);flex-shrink:0}
+.hp-id{font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:900;color:var(--lime)}
+.hp-addr{font-size:11px;color:var(--muted);margin-top:1px}
+.hp-add{width:100%;padding:10px;background:none;border:1px dashed var(--border);border-radius:10px;color:var(--text2);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:8px}
+.hp-add:hover{border-color:var(--emerald);color:var(--emerald)}
+
+/* CONTENT */
+.page-body{flex:1;overflow-y:auto}
+.content{padding:24px 20px;max-width:1300px;margin:0 auto}
+.section-title{font-family:'Cabinet Grotesk',sans-serif;font-size:22px;font-weight:900;margin-bottom:4px}
+.section-sub{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5}
+.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:22px;transition:border-color .2s}
+.card:hover{border-color:rgba(52,211,100,0.28)}
+.wt{font-family:'Cabinet Grotesk',sans-serif;font-size:15px;font-weight:800;display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700}
+.bl{background:rgba(52,211,100,0.15);color:var(--emerald)}.bv{background:rgba(34,211,238,0.15);color:var(--cyan)}.ba{background:rgba(251,191,36,0.15);color:var(--amber)}.br{background:rgba(244,63,94,0.15);color:var(--rose)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.scope-tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700}
+.s1{background:rgba(249,115,22,0.2);color:var(--orange)}.s2{background:rgba(251,191,36,0.2);color:var(--amber)}.s3{background:rgba(139,92,246,0.2);color:var(--violet)}
+.cbox{position:relative}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.kpi{position:relative;overflow:hidden;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px;transition:transform .2s,border-color .2s}
+.kpi:hover{transform:translateY(-3px);border-color:rgba(52,211,100,0.35)}
+.kpi-glow{position:absolute;top:-30px;right:-30px;width:110px;height:110px;border-radius:50%;filter:blur(40px);opacity:.28}
+.kpi-lbl{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;font-weight:700}
+.kpi-num{font-family:'Cabinet Grotesk',sans-serif;font-size:38px;font-weight:900;line-height:1;margin-bottom:4px}
+.kpi-unit{font-size:12px;color:var(--muted);margin-bottom:12px}
+.kpi-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.cr{background:rgba(244,63,94,0.15);color:var(--rose)}.cg{background:rgba(52,211,100,0.15);color:var(--emerald)}.cl{background:rgba(163,230,53,0.15);color:var(--lime)}.ct{background:rgba(45,212,191,0.15);color:var(--teal)}
+
+/* TOGGLE */
+.tog-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border)}
+.tog-row:last-child{border-bottom:none}
+.tog-lbl{font-size:13px;display:flex;align-items:center;gap:8px;font-weight:500}
+.tog{width:48px;height:26px;border-radius:13px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
+.tog.on{background:var(--emerald);border-color:var(--emerald)}
+.tog::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,0.3)}
+.tog.on::after{transform:translateX(22px)}
+
+/* STEPPER */
+.stepper{display:flex;align-items:center;gap:10px}
+.step-btn{width:34px;height:34px;border-radius:9px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.step-btn:hover{background:var(--emerald);border-color:var(--emerald);color:#000}
+.step-val{font-family:'Cabinet Grotesk',sans-serif;font-size:22px;font-weight:900;min-width:26px;text-align:center}
+
+/* RANGE */
+.rw{display:flex;align-items:center;gap:12px;margin:10px 0}
+input[type=range]{flex:1;-webkit-appearance:none;height:6px;border-radius:3px;outline:none;background:linear-gradient(to right,var(--emerald) 0%,var(--emerald) var(--val,33%),var(--bg3) var(--val,33%))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--emerald);cursor:pointer;box-shadow:0 0 12px rgba(52,211,100,0.5);border:2px solid var(--bg)}
+.rv{font-family:'Cabinet Grotesk',sans-serif;font-size:19px;font-weight:900;min-width:64px;text-align:right;color:var(--lime)}
+
+/* TABS inside page */
+.tab-row{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:0}
+.tab-btn{padding:10px 18px;border-radius:10px 10px 0 0;font-size:13px;font-weight:700;cursor:pointer;background:none;border:none;color:var(--muted);transition:all .2s;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab-btn:hover{color:var(--text2)}
+.tab-btn.active{color:var(--emerald);border-bottom-color:var(--emerald)}
+.tab-pane{display:none}.tab-pane.active{display:block;animation:fadeIn .3s}
+
+/* MEMBER CARD */
+.member-row{display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg2);border-radius:13px;border:1px solid var(--border);transition:border-color .2s}
+.member-row:hover{border-color:rgba(52,211,100,0.25)}
+.member-av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cabinet Grotesk',sans-serif;font-size:15px;font-weight:900;color:#000;flex-shrink:0}
+.member-info{flex:1}
+.member-name{font-size:14px;font-weight:700}
+.member-phone{font-size:11px;color:var(--muted);margin-top:2px}
+.member-role{display:inline-block;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;margin-top:4px}
+.role-owner{background:rgba(163,230,53,0.15);color:var(--lime)}
+.role-member{background:rgba(52,211,100,0.12);color:var(--emerald)}
+.role-pending{background:rgba(251,191,36,0.12);color:var(--amber)}
+
+/* VEHICLE CARD */
+.veh-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px;transition:border-color .2s}
+.veh-card:hover{border-color:rgba(52,211,100,0.28)}
+.veh-plate-display{font-family:'Cabinet Grotesk',sans-serif;font-size:17px;font-weight:900;letter-spacing:2px;color:var(--lime)}
+.veh-detail{font-size:11px;color:var(--muted);margin-top:3px}
+.veh-gps-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;background:rgba(45,212,191,0.1);border:1px solid rgba(45,212,191,0.2);border-radius:20px;font-size:10px;color:var(--teal);font-weight:700;margin-top:6px}
+
+/* VEHICLE FLEET COUNTER */
+.fleet-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.fleet-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;text-align:center}
+.fleet-icon{font-size:28px;margin-bottom:8px}
+.fleet-label{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:10px}
+.fleet-stepper{display:flex;align-items:center;justify-content:center;gap:12px}
+
+/* VEHICLE INPUT ROW */
+.veh-input-row{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px;position:relative}
+.veh-input-row .veh-type-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;margin-bottom:12px}
+.veh-input-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.remove-veh{position:absolute;top:12px;right:12px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;transition:color .2s}
+.remove-veh:hover{color:var(--rose)}
+
+/* QR */
+.qr-master-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.qr-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:18px;text-align:center;transition:all .25s;cursor:default}
+.qr-card:hover{border-color:rgba(52,211,100,0.3);transform:translateY(-2px)}
+.qr-btns{display:flex;gap:6px;margin-top:10px}
+.qr-btn{flex:1;padding:9px 4px;border-radius:9px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:none;color:var(--text2);transition:all .2s}
+.qr-btn:hover{border-color:var(--emerald);color:var(--emerald);background:rgba(52,211,100,0.07)}
+
+/* MAP */
+.map-container{border-radius:16px;overflow:hidden;border:1px solid var(--border);position:relative;background:var(--bg2)}
+.map-pin{position:absolute;display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-100%)}
+.pin-lbl{background:var(--card);border:1px solid var(--emerald);border-radius:8px;padding:3px 8px;font-size:10px;font-weight:700;white-space:nowrap;color:var(--emerald);margin-bottom:2px;box-shadow:0 4px 12px rgba(0,0,0,0.4)}
+.pin-dot{width:12px;height:12px;background:var(--emerald);border-radius:50%;border:2px solid #fff;box-shadow:0 0 10px rgba(52,211,100,0.5)}
+.pin-tail{width:2px;height:10px;background:var(--emerald)}
+.vpin .pin-dot{background:var(--amber);box-shadow:0 0 10px rgba(251,191,36,0.5)}
+.vpin .pin-tail{background:var(--amber)}
+.vpin .pin-lbl{border-color:var(--amber);color:var(--amber)}
+
+/* SCAN MODAL */
+.scanner-modal{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.88);backdrop-filter:blur(12px);align-items:center;justify-content:center;flex-direction:column;gap:14px}
+.scanner-modal.open{display:flex;animation:fadeIn .2s}
+.scanner-box{position:relative;width:300px;height:300px;border-radius:20px;overflow:hidden;border:2px solid var(--emerald);box-shadow:0 0 40px rgba(52,211,100,0.3)}
+#scanner-video{width:100%;height:100%;object-fit:cover}
+.scan-corner{position:absolute;width:28px;height:28px;border-color:var(--lime);border-style:solid;border-width:0}
+.sc-tl{top:10px;left:10px;border-top-width:3px;border-left-width:3px;border-radius:4px 0 0 0}
+.sc-tr{top:10px;right:10px;border-top-width:3px;border-right-width:3px;border-radius:0 4px 0 0}
+.sc-bl{bottom:10px;left:10px;border-bottom-width:3px;border-left-width:3px;border-radius:0 0 0 4px}
+.sc-br{bottom:10px;right:10px;border-bottom-width:3px;border-right-width:3px;border-radius:0 0 4px 0}
+.scan-line{position:absolute;left:18px;right:18px;height:2px;background:linear-gradient(90deg,transparent,var(--lime),transparent);animation:scanAnim 2s linear infinite;top:50%}
+@keyframes scanAnim{0%{top:18%}50%{top:82%}100%{top:18%}}
+#scan-canvas{display:none}
+
+/* MODAL */
+.modal-ov{display:none;position:fixed;inset:0;z-index:250;background:rgba(0,0,0,0.78);backdrop-filter:blur(10px);align-items:center;justify-content:center}
+.modal-ov.open{display:flex;animation:fadeIn .2s}
+.modal{background:var(--card);border:1px solid var(--border2);border-radius:22px;padding:28px;max-width:460px;width:92%;animation:slideUp .3s}
+.modal-title{font-family:'Cabinet Grotesk',sans-serif;font-size:19px;font-weight:900;margin-bottom:5px}
+.modal-sub{color:var(--muted);font-size:12px;margin-bottom:18px;line-height:1.6}
+.modal-btns{display:flex;gap:8px;margin-top:4px}
+.btn-cancel{flex:1;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:11px;color:var(--muted);cursor:pointer;font-size:13px}
+.btn-confirm{flex:2;padding:12px;background:linear-gradient(135deg,#1a5c32,var(--emerald));border:none;border-radius:11px;color:#000;font-family:'Cabinet Grotesk',sans-serif;font-size:14px;font-weight:900;cursor:pointer}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;z-index:400;padding:13px 18px;background:var(--card2);border:1px solid var(--emerald);border-radius:14px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:9px;box-shadow:0 8px 40px rgba(0,0,0,0.5);transform:translateY(100px);opacity:0;transition:all .35s;max-width:340px}
+.toast.show{transform:translateY(0);opacity:1}
+
+/* CREDITS */
+.cr-hero{background:linear-gradient(135deg,#0f3320 0%,#1a4a2a 40%,var(--bg3) 100%);border:1px solid rgba(52,211,100,0.3);border-radius:24px;padding:30px;position:relative;overflow:hidden;margin-bottom:20px}
+.cr-hero::before{content:'';position:absolute;right:-50px;top:-50px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(163,230,53,0.12) 0%,transparent 70%)}
+.cr-big{font-family:'Cabinet Grotesk',sans-serif;font-size:66px;font-weight:900;line-height:1;background:linear-gradient(135deg,var(--lime),var(--emerald));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+/* FEASIBILITY GUIDE */
+.feas-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;margin-bottom:14px}
+.feas-title{font-family:'Cabinet Grotesk',sans-serif;font-size:17px;font-weight:900;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.feas-priority{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:800;letter-spacing:.5px}
+.p-must{background:rgba(244,63,94,0.15);color:var(--rose)}
+.p-should{background:rgba(251,191,36,0.15);color:var(--amber)}
+.p-nice{background:rgba(52,211,100,0.15);color:var(--emerald)}
+.p-future{background:rgba(139,92,246,0.15);color:var(--violet)}
+.feas-step{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.feas-step:last-child{border-bottom:none}
+.feas-num{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#1a5c32,var(--emerald));display:flex;align-items:center;justify-content:center;font-family:'Cabinet Grotesk',sans-serif;font-size:12px;font-weight:900;color:#000;flex-shrink:0}
+.feas-content{flex:1}
+.feas-item-title{font-size:13px;font-weight:700;color:var(--text2);margin-bottom:4px}
+.feas-desc{font-size:12px;color:var(--muted);line-height:1.7}
+.code-block{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;font-family:monospace;font-size:11px;color:var(--text2);line-height:1.9;margin-top:8px;overflow-x:auto}
+.code-block .key{color:var(--sky)}.code-block .val{color:var(--lime)}.code-block .cmt{color:var(--muted)}
+.checklist{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.check-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:11px;background:var(--bg2);border:1px solid var(--border)}
+.check-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.check-text{font-size:12px;color:var(--muted);line-height:1.6}
+.check-text strong{color:var(--text2)}
+.progress-bar-wrap{height:8px;background:var(--bg2);border-radius:4px;overflow:hidden;margin-top:8px}
+.progress-bar{height:8px;border-radius:4px;transition:width 1s}
+
+/* LEDGER */
+.ledger-table{width:100%;border-collapse:collapse}
+.ledger-table th{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);font-weight:700}
+.ledger-table td{padding:12px 12px;font-size:12px;border-bottom:1px solid rgba(52,211,100,0.05)}
+.ledger-table tr:hover td{background:rgba(52,211,100,0.03)}
+.earned{color:var(--emerald);font-weight:700;font-family:'Cabinet Grotesk',sans-serif}
+.used-val{color:var(--rose);font-weight:700;font-family:'Cabinet Grotesk',sans-serif}
+
+/* REDEEM */
+.redeem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.rc{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;cursor:pointer;transition:all .25s;text-align:center}
+.rc:hover{border-color:var(--emerald);transform:translateY(-3px);box-shadow:0 16px 40px rgba(0,0,0,0.4)}
+
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+@media(max-width:768px){
+  .kpi-row,.g3,.g4,.fleet-grid,.veh-input-grid{grid-template-columns:1fr 1fr}
+  .g2,.qr-master-grid,.redeem-grid{grid-template-columns:1fr}
+  .nav-tabs{display:none}.content{padding:14px}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="page-login" class="page active">
+  <div class="login-aurora"></div><div class="login-dots"></div>
+  <div class="login-card">
+    <div class="brand"><div class="brand-icon">🌿</div><div><div class="brand-name">GreenCredit</div><div class="brand-tag">Household Carbon Platform v4</div></div></div>
+    <div id="phone-step">
+      <div class="lh">Track. Reduce. Earn.</div>
+      <div class="ls">Every household gets a unique ID. Every member and vehicle linked automatically. Your carbon, your credits.</div>
+      <div class="fl"><label>Mobile Number</label><input type="tel" class="inp" id="phone-in" placeholder="+91 98765 43210" maxlength="13"></div>
+      <button class="btn-p" onclick="sendOTP()">Get OTP →</button>
+    </div>
+    <div id="otp-step">
+      <div class="lh">Verify OTP</div>
+      <div class="ls">Sent to <span id="ph-disp" style="color:var(--lime);font-weight:700"></span></div>
+      <div class="otp-boxes">
+        <input class="otp-box inp" maxlength="1" oninput="otpNext(this,0)">
+        <input class="otp-box inp" maxlength="1" oninput="otpNext(this,1)">
+        <input class="otp-box inp" maxlength="1" oninput="otpNext(this,2)">
+        <input class="otp-box inp" maxlength="1" oninput="otpNext(this,3)">
+        <input class="otp-box inp" maxlength="1" oninput="otpNext(this,4)">
+        <input class="otp-box inp" maxlength="1" oninput="otpNext(this,5)">
+      </div>
+      <button class="btn-p" onclick="verifyOTP()">Enter Platform →</button>
+      <div id="recaptcha-container"></div>
+      <div class="otp-hint">Demo OTP: <span>123456</span> &nbsp;·&nbsp; <span onclick="backToPhone()">← Change number</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="page-app" class="page">
+  <nav class="nav">
+    <div class="nav-brand" onclick="goto('dashboard')">
+      <div class="bi">🌿</div><span>GreenCredit</span>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-p="dashboard" onclick="goto('dashboard')">🏠 Dashboard</button>
+      <button class="nav-tab" data-p="house" onclick="goto('house')">🏡 House</button>
+      <button class="nav-tab" data-p="members" onclick="goto('members')">👥 Members</button>
+      <button class="nav-tab" data-p="vehicles" onclick="goto('vehicles')">🚗 Vehicles</button>
+      <button class="nav-tab" data-p="map" onclick="goto('map')">🗺️ Live Map</button>
+      <button class="nav-tab" data-p="track" onclick="goto('track')">⚡ Track</button>
+      <button class="nav-tab" data-p="qrcodes" onclick="goto('qrcodes')">📱 QR & Scan</button>
+      <button class="nav-tab" data-p="credits" onclick="goto('credits')">💰 Credits</button>
+      <button class="nav-tab" data-p="feasibility" onclick="goto('feasibility')">🚀 Feasibility</button>
+    </div>
+    <div class="nav-right">
+      <div class="house-switcher" onclick="toggleHousePanel()">
+        <div class="live-dot"></div>
+        <span id="nav-hid">TN-CH-001</span>
+        <span style="color:var(--muted);font-size:10px;margin-left:2px">▾</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HOUSE SWITCHER PANEL -->
+  <div class="house-panel" id="house-panel">
+    <div class="hp-title">Switch Household</div>
+    <div id="house-list"></div>
+    <button class="hp-add" onclick="addNewHouseFlow()">+ Register New House</button>
+  </div>
+
+  <div class="page-body">
+
+    <!-- ══ DASHBOARD ══ -->
+    <div id="sub-dashboard" class="content">
+      <div class="section-title">Dashboard <span style="font-size:13px;font-weight:400;color:var(--muted)" id="dash-date"></span></div>
+      <div class="section-sub">House <span id="dash-hid" style="color:var(--lime);font-weight:700">TN-CH-001</span> · <span id="dash-members">4 members</span> · <span id="dash-vehs">3 vehicles</span></div>
+      <div class="kpi-row">
+        <div class="kpi"><div class="kpi-glow" style="background:var(--rose)"></div><div class="kpi-lbl">Total Emission</div><div class="kpi-num" style="color:var(--rose)" id="kpi-e">5.5</div><div class="kpi-unit">kg CO₂ today</div><div class="kpi-chip cr">↑ 8% vs yesterday</div></div>
+        <div class="kpi"><div class="kpi-glow" style="background:var(--amber)"></div><div class="kpi-lbl">Reduction</div><div class="kpi-num" style="color:var(--amber)" id="kpi-r">1.4</div><div class="kpi-unit">kg via solar</div><div class="kpi-chip ct">☀️ Solar active</div></div>
+        <div class="kpi"><div class="kpi-glow" style="background:var(--teal)"></div><div class="kpi-lbl">Offset</div><div class="kpi-num" style="color:var(--teal)" id="kpi-o">0.3</div><div class="kpi-unit">kg via plants</div><div class="kpi-chip cg">🌿 3 trees</div></div>
+        <div class="kpi"><div class="kpi-glow" style="background:var(--lime)"></div><div class="kpi-lbl">Net Carbon</div><div class="kpi-num" style="color:var(--lime)" id="kpi-n">3.8</div><div class="kpi-unit">kg net CO₂</div><div class="kpi-chip cl">💰 Credits: +1.2</div></div>
+      </div>
+      <div class="g2" style="margin-bottom:14px">
+        <div class="card">
+          <div class="wt">Emission Breakdown <span class="badge bl"><span class="live-dot"></span>Live</span></div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:14px">House <span id="db-hid2" style="color:var(--lime);font-weight:700">TN-CH-001</span> · all members combined</div>
+          <div id="emi-list" style="display:flex;flex-direction:column;gap:12px"></div>
+        </div>
+        <div class="card"><div class="wt">7-Day CO₂ Trend</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px">Emission · Net · Baseline</div><div class="cbox" style="height:220px"><canvas id="c-trend"></canvas></div></div>
+      </div>
+      <div class="g3">
+        <div class="card"><div class="wt">Source Share</div><div class="cbox" style="height:170px;margin-top:8px"><canvas id="c-pie"></canvas></div></div>
+        <div class="card"><div class="wt">Monthly Spend <span class="scope-tag s3">Scope 3</span></div><div class="cbox" style="height:170px;margin-top:8px"><canvas id="c-spend"></canvas></div></div>
+        <div class="card" style="text-align:center"><div class="wt" style="justify-content:center">Sustainability Score</div>
+          <div style="font-family:'Cabinet Grotesk',sans-serif;font-size:60px;font-weight:900;color:var(--emerald);line-height:1;margin-top:12px">78</div>
+          <div style="font-size:12px;color:var(--muted);margin:6px 0 12px">/ 100 · <span style="color:var(--lime)">Good household</span></div>
+          <div style="background:var(--bg2);border-radius:11px;padding:11px;font-size:12px;color:var(--muted);line-height:1.7">⬆️ +5 pts this week<br>💡 Reduce AC → −0.3 kg/day</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ HOUSE SETUP ══ -->
+    <div id="sub-house" class="content" style="display:none">
+      <div class="section-title">🏡 House Registration</div>
+      <div class="section-sub">Register your household — generates a unique House ID linking all members, vehicles, and carbon data</div>
+      <div class="g2">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card">
+            <div class="wt">Household Details</div>
+            <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px">
+              <div class="fl"><label>Owner Full Name</label><input class="inp" placeholder="e.g. Rajesh Kumar" id="h-owner"></div>
+              <div class="fl"><label>Full Address</label><textarea class="inp" rows="2" placeholder="42, Gandhi St, T Nagar, Chennai 600017" id="h-addr"></textarea></div>
+              <div class="fl"><label>City</label><select class="inp" id="h-city"><option>Chennai</option><option>Coimbatore</option><option>Madurai</option><option>Bangalore</option><option>Mumbai</option><option>Delhi</option><option>Hyderabad</option></select></div>
+              <div class="fl"><label>House Type</label>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                  <div style="padding:14px;border:1px solid var(--border);border-radius:12px;cursor:pointer;text-align:center;background:var(--bg2);transition:all .2s" class="ht-card sel" id="ht-apt" onclick="selHT('apt')"><div style="font-size:22px;margin-bottom:6px">🏢</div><div style="font-size:12px;font-weight:700">Apartment</div></div>
+                  <div style="padding:14px;border:1px solid var(--border);border-radius:12px;cursor:pointer;text-align:center;background:var(--bg2);transition:all .2s" class="ht-card" id="ht-ind" onclick="selHT('ind')"><div style="font-size:22px;margin-bottom:6px">🏠</div><div style="font-size:12px;font-weight:700">Individual</div></div>
+                </div>
+              </div>
+              <div class="fl"><label>Number of Members</label>
+                <div class="stepper"><div class="step-btn" onclick="adjM(-1)">−</div><div class="step-val" id="m-val">4</div><div class="step-btn" onclick="adjM(1)">+</div><span style="font-size:12px;color:var(--muted)">members</span></div>
+              </div>
+              <div class="fl"><label>Electricity Provider</label><select class="inp"><option>TNEB</option><option>BESCOM</option><option>MSEB</option><option>BSES</option></select></div>
+              <div class="fl"><label>LPG Provider</label><select class="inp"><option>Indane</option><option>HP Gas</option><option>Bharat Gas</option></select></div>
+              <div class="tog-row"><div class="tog-lbl">☀️ Solar panels installed</div><div class="tog" id="h-solar" onclick="this.classList.toggle('on')"></div></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card">
+            <div class="wt">🪪 House ID & QR Output</div>
+            <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center;margin-top:10px">
+              <div style="font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Your Unique House ID</div>
+              <div id="h-id-display" style="font-family:'Cabinet Grotesk',sans-serif;font-size:30px;font-weight:900;background:linear-gradient(90deg,var(--emerald),var(--lime));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:8px 0">—</div>
+              <div id="h-addr-display" style="font-size:11px;color:var(--muted);margin-bottom:14px">Register to generate</div>
+              <div style="width:140px;height:140px;margin:0 auto 12px;background:#fff;border-radius:12px;padding:8px;display:flex;align-items:center;justify-content:center" id="h-qr-wrap"><span style="font-size:28px">🔲</span></div>
+              <div style="font-size:11px;color:var(--muted)">All bills, activities & members link to this ID</div>
+            </div>
+            <button class="btn-p" style="margin-top:14px" onclick="registerHouse()">🏡 Register & Generate House ID</button>
+          </div>
+          <div class="card" style="background:rgba(56,189,248,0.04);border-color:rgba(56,189,248,0.18)">
+            <div class="wt" style="color:var(--sky)">🔥 Firebase: How to Save This</div>
+            <div class="code-block" style="margin-top:10px">
+<span class="cmt">// Run this when owner registers</span><br>
+await setDoc(doc(db, <span class="val">"houses"</span>, houseId), {<br>
+&nbsp;&nbsp;<span class="key">house_id</span>: houseId,<br>
+&nbsp;&nbsp;<span class="key">owner_phone</span>: ownerPhone,<br>
+&nbsp;&nbsp;<span class="key">address</span>: address,<br>
+&nbsp;&nbsp;<span class="key">city</span>: city,<br>
+&nbsp;&nbsp;<span class="key">members</span>: memberCount,<br>
+&nbsp;&nbsp;<span class="key">created_at</span>: serverTimestamp()<br>
+});<br>
+<span class="cmt">// Also write owner to users collection</span><br>
+await setDoc(doc(db, <span class="val">"users"</span>, ownerPhone), {<br>
+&nbsp;&nbsp;<span class="key">house_id</span>: houseId, <span class="key">role</span>: <span class="val">"owner"</span><br>
+});
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ MEMBERS MANAGEMENT ══ -->
+    <div id="sub-members" class="content" style="display:none">
+      <div class="section-title">👥 Member Management</div>
+      <div class="section-sub">Add, manage, and link phone numbers to House ID <span id="mem-hid" style="color:var(--lime);font-weight:700">TN-CH-001</span> — each member's activities auto-aggregate</div>
+
+      <div class="tab-row">
+        <button class="tab-btn active" onclick="switchMemberTab(this,'existing')">Current Members</button>
+        <button class="tab-btn" onclick="switchMemberTab(this,'add')">Add New Member</button>
+        <button class="tab-btn" onclick="switchMemberTab(this,'link')">Link to Another House</button>
+        <button class="tab-btn" onclick="switchMemberTab(this,'firebase')">Firebase Steps</button>
+      </div>
+
+      <!-- EXISTING MEMBERS -->
+      <div class="tab-pane active" id="tp-existing">
+        <div class="card" style="margin-bottom:14px">
+          <div class="wt">Registered Members <span class="badge bl" id="member-count-badge">4 members</span></div>
+          <div id="members-list" style="display:flex;flex-direction:column;gap:10px;margin-top:12px"></div>
+        </div>
+        <div class="card" style="background:rgba(52,211,100,0.03);border-color:rgba(52,211,100,0.15)">
+          <div class="wt">How Member Data Aggregates</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.8">
+            When any member logs in with their phone number → system looks up their House ID → all data they enter gets tagged with that House ID → dashboard shows combined total for entire household.
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px">
+            <div style="padding:12px;background:var(--bg2);border-radius:11px;text-align:center;font-size:12px;color:var(--muted)"><div style="font-size:18px;margin-bottom:4px">📱</div>Member logs in<br>with phone</div>
+            <div style="padding:12px;background:var(--bg2);border-radius:11px;text-align:center;font-size:12px;color:var(--muted)"><div style="font-size:18px;margin-bottom:4px">🔗</div>System finds<br>their House ID</div>
+            <div style="padding:12px;background:var(--bg2);border-radius:11px;text-align:center;font-size:12px;color:var(--muted)"><div style="font-size:18px;margin-bottom:4px">📊</div>Data adds to<br>household total</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADD NEW MEMBER -->
+      <div class="tab-pane" id="tp-add">
+        <div class="g2">
+          <div class="card">
+            <div class="wt">Add New Member</div>
+            <div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">
+              <div class="fl"><label>Full Name</label><input class="inp" placeholder="e.g. Priya Kumar" id="new-name"></div>
+              <div class="fl"><label>Phone Number</label><input class="inp" type="tel" placeholder="+91 91234 56780" id="new-phone"></div>
+              <div class="fl"><label>Role</label>
+                <select class="inp" id="new-role">
+                  <option value="member">Member (can log activities)</option>
+                  <option value="viewer">Viewer (read-only)</option>
+                  <option value="owner">Co-Owner (full access)</option>
+                </select>
+              </div>
+              <div class="fl"><label>Relationship</label>
+                <select class="inp" id="new-relation">
+                  <option>Spouse / Partner</option><option>Child</option><option>Parent</option><option>Sibling</option><option>Tenant</option><option>Other</option>
+                </select>
+              </div>
+              <div style="padding:12px;background:var(--bg2);border-radius:11px;font-size:12px;color:var(--muted);line-height:1.7">
+                📱 An OTP invite will be sent to their phone number. Once they verify, they get linked to this House ID automatically.
+              </div>
+              <button class="btn-p" onclick="addMember()">+ Add Member & Send Invite</button>
+            </div>
+          </div>
+          <div class="card" style="background:rgba(56,189,248,0.04);border-color:rgba(56,189,248,0.18)">
+            <div class="wt" style="color:var(--sky)">🔥 Firebase: Add Member</div>
+            <div class="code-block" style="margin-top:10px">
+<span class="cmt">// Step 1: Add phone to house's member list</span><br>
+await updateDoc(doc(db, <span class="val">"houses"</span>, houseId), {<br>
+&nbsp;&nbsp;<span class="key">member_phones</span>: arrayUnion(newPhone)<br>
+});<br><br>
+<span class="cmt">// Step 2: Create user doc linking phone → houseId</span><br>
+await setDoc(doc(db, <span class="val">"users"</span>, newPhone), {<br>
+&nbsp;&nbsp;<span class="key">phone</span>: newPhone,<br>
+&nbsp;&nbsp;<span class="key">name</span>: memberName,<br>
+&nbsp;&nbsp;<span class="key">house_id</span>: houseId,<br>
+&nbsp;&nbsp;<span class="key">role</span>: <span class="val">"member"</span>,<br>
+&nbsp;&nbsp;<span class="key">status</span>: <span class="val">"pending"</span>,<span class="cmt">// until OTP verified</span><br>
+&nbsp;&nbsp;<span class="key">added_by</span>: ownerPhone,<br>
+&nbsp;&nbsp;<span class="key">joined_at</span>: serverTimestamp()<br>
+});<br><br>
+<span class="cmt">// Step 3: When they log in → status becomes "active"</span><br>
+await updateDoc(doc(db, <span class="val">"users"</span>, newPhone), {<br>
+&nbsp;&nbsp;<span class="key">status</span>: <span class="val">"active"</span><br>
+});
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LINK TO ANOTHER HOUSE -->
+      <div class="tab-pane" id="tp-link">
+        <div class="g2">
+          <div class="card">
+            <div class="wt">Link Phone to a Different House</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.7">
+              A person may be registered under one House ID but needs to be linked to another (e.g. joint family, rental). Use this to reassign or add a second house link.
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div class="fl"><label>Phone Number to Reassign</label><input class="inp" type="tel" placeholder="+91 existing member phone" id="link-phone"></div>
+              <div class="fl"><label>Target House ID</label><input class="inp" placeholder="e.g. TN-CH-002" id="link-target-hid" style="letter-spacing:2px;font-weight:700"></div>
+              <div class="fl"><label>Link Type</label>
+                <select class="inp" id="link-type">
+                  <option value="move">Move to new house (remove from current)</option>
+                  <option value="add">Add to second house (keep both)</option>
+                  <option value="primary">Change primary house only</option>
+                </select>
+              </div>
+              <div style="padding:12px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.15);border-radius:11px;font-size:12px;color:var(--muted);line-height:1.7">
+                ⚠️ Moving a member will transfer their activity history. This requires owner confirmation from both houses.
+              </div>
+              <button class="btn-p" onclick="linkToHouse()">🔗 Link / Reassign Member</button>
+            </div>
+          </div>
+          <div class="card" style="background:rgba(56,189,248,0.04);border-color:rgba(56,189,248,0.18)">
+            <div class="wt" style="color:var(--sky)">🔥 Firebase: Link to Another House</div>
+            <div class="code-block" style="margin-top:10px">
+<span class="cmt">// MOVE: Remove from current, add to new</span><br>
+const userRef = doc(db, <span class="val">"users"</span>, phone);<br>
+const userData = (await getDoc(userRef)).data();<br>
+const oldHouseId = userData.house_id;<br><br>
+<span class="cmt">// Remove from old house's member list</span><br>
+await updateDoc(doc(db,<span class="val">"houses"</span>,oldHouseId), {<br>
+&nbsp;&nbsp;<span class="key">member_phones</span>: arrayRemove(phone)<br>
+});<br><br>
+<span class="cmt">// Add to new house</span><br>
+await updateDoc(doc(db,<span class="val">"houses"</span>,newHouseId), {<br>
+&nbsp;&nbsp;<span class="key">member_phones</span>: arrayUnion(phone)<br>
+});<br><br>
+<span class="cmt">// Update user's primary house_id</span><br>
+await updateDoc(userRef, {<br>
+&nbsp;&nbsp;<span class="key">house_id</span>: newHouseId,<br>
+&nbsp;&nbsp;<span class="key">prev_house_id</span>: oldHouseId<br>
+});<br><br>
+<span class="cmt">// ADD: Keep in both (dual membership)</span><br>
+await updateDoc(userRef, {<br>
+&nbsp;&nbsp;<span class="key">secondary_house_ids</span>: arrayUnion(newHouseId)<br>
+});
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FIREBASE STEPS -->
+      <div class="tab-pane" id="tp-firebase">
+        <div class="card" style="background:rgba(56,189,248,0.04);border-color:rgba(56,189,248,0.18)">
+          <div class="wt" style="color:var(--sky)">Complete Firebase Users Collection Schema</div>
+          <div class="code-block" style="margin-top:12px">
+<span class="cmt">// Collection: users / Document ID = phone number</span><br>
+{<br>
+&nbsp;&nbsp;<span class="key">phone</span>: <span class="val">"9876543210"</span>,<br>
+&nbsp;&nbsp;<span class="key">name</span>: <span class="val">"Rajesh Kumar"</span>,<br>
+&nbsp;&nbsp;<span class="key">house_id</span>: <span class="val">"TN-CH-001"</span>,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmt">// primary house</span><br>
+&nbsp;&nbsp;<span class="key">secondary_house_ids</span>: [<span class="val">"TN-CH-005"</span>],&nbsp;&nbsp;&nbsp;<span class="cmt">// dual membership</span><br>
+&nbsp;&nbsp;<span class="key">role</span>: <span class="val">"owner"</span>,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmt">// owner|member|viewer</span><br>
+&nbsp;&nbsp;<span class="key">status</span>: <span class="val">"active"</span>,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cmt">// pending|active|removed</span><br>
+&nbsp;&nbsp;<span class="key">relation</span>: <span class="val">"owner"</span>,<br>
+&nbsp;&nbsp;<span class="key">added_by</span>: <span class="val">"9876543210"</span>,<br>
+&nbsp;&nbsp;<span class="key">joined_at</span>: <span class="val">Timestamp</span>,<br>
+&nbsp;&nbsp;<span class="key">last_login</span>: <span class="val">Timestamp</span><br>
+}<br><br>
+<span class="cmt">// Query: "which house does this phone belong to?"</span><br>
+const userDoc = await getDoc(doc(db, <span class="val">"users"</span>, phone));<br>
+const houseId = userDoc.data().house_id;<span class="cmt"> // → load dashboard</span><br><br>
+<span class="cmt">// Query: "all members of a house"</span><br>
+const q = query(collection(db,<span class="val">"users"</span>),<br>
+&nbsp;&nbsp;where(<span class="val">"house_id"</span>, <span class="val">"=="</span>, houseId));<br>
+const members = await getDocs(q);
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ VEHICLES ══ -->
+    <div id="sub-vehicles" class="content" style="display:none">
+      <div class="section-title">🚗 Vehicle Fleet</div>
+      <div class="section-sub">Register all vehicles for House <span id="veh-hid" style="color:var(--lime);font-weight:700">TN-CH-001</span> — fuel type determines emission vs reduction</div>
+
+      <!-- FLEET COUNTER -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="wt">Fleet Count</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px">How many of each vehicle type does your household own?</div>
+        <div class="fleet-grid">
+          <div class="fleet-card">
+            <div class="fleet-icon">🏍️</div>
+            <div class="fleet-label">Two-Wheelers (Petrol/Diesel)</div>
+            <div class="fleet-stepper">
+              <div class="step-btn" onclick="adjFleet('2w-petrol',-1)">−</div>
+              <div class="step-val" id="fleet-2w-petrol">1</div>
+              <div class="step-btn" onclick="adjFleet('2w-petrol',1)">+</div>
+            </div>
+          </div>
+          <div class="fleet-card">
+            <div class="fleet-icon">⚡</div>
+            <div class="fleet-label">Two-Wheelers (Electric)</div>
+            <div class="fleet-stepper">
+              <div class="step-btn" onclick="adjFleet('2w-ev',-1)">−</div>
+              <div class="step-val" id="fleet-2w-ev">0</div>
+              <div class="step-btn" onclick="adjFleet('2w-ev',1)">+</div>
+            </div>
+          </div>
+          <div class="fleet-card">
+            <div class="fleet-icon">🚗</div>
+            <div class="fleet-label">Four-Wheelers (Petrol/Diesel)</div>
+            <div class="fleet-stepper">
+              <div class="step-btn" onclick="adjFleet('4w-petrol',-1)">−</div>
+              <div class="step-val" id="fleet-4w-petrol">1</div>
+              <div class="step-btn" onclick="adjFleet('4w-petrol',1)">+</div>
+            </div>
+          </div>
+          <div class="fleet-card">
+            <div class="fleet-icon">🔋</div>
+            <div class="fleet-label">Four-Wheelers (EV / CNG)</div>
+            <div class="fleet-stepper">
+              <div class="step-btn" onclick="adjFleet('4w-ev',-1)">−</div>
+              <div class="step-val" id="fleet-4w-ev">0</div>
+              <div class="step-btn" onclick="adjFleet('4w-ev',1)">+</div>
+            </div>
+          </div>
+        </div>
+        <div id="fleet-summary" style="margin-top:14px;padding:12px;background:var(--bg2);border-radius:11px;font-size:12px;color:var(--muted);line-height:1.8">
+          📊 Total fleet: <span style="color:var(--text2);font-weight:700">2 vehicles</span> · Emission vehicles: <span style="color:var(--rose);font-weight:700">2</span> · Green vehicles: <span style="color:var(--emerald);font-weight:700">0</span>
+        </div>
+      </div>
+
+      <!-- VEHICLE DETAIL INPUT -->
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div class="wt" style="margin-bottom:0">Vehicle Details</div>
+          <button class="btn-sm" onclick="addVehicleRow()">+ Add Vehicle</button>
+        </div>
+        <div id="vehicle-rows"></div>
+      </div>
+
+      <!-- REGISTERED VEHICLES DISPLAY -->
+      <div class="card">
+        <div class="wt">Registered Vehicles <span class="badge bl" id="veh-count-badge">2 vehicles</span></div>
+        <div id="reg-vehicles" style="display:flex;flex-direction:column;gap:10px;margin-top:12px"></div>
+        <div style="margin-top:14px;padding:12px;background:rgba(56,189,248,0.04);border:1px solid rgba(56,189,248,0.14);border-radius:11px">
+          <div style="font-size:11px;font-weight:700;color:var(--sky);margin-bottom:6px">🔥 Firebase: Vehicle Schema</div>
+          <div class="code-block">
+<span class="cmt">// houses / TN-CH-001 / vehicles / "TN09AB1234"</span><br>
+{<span class="key">plate</span>:<span class="val">"TN 09 AB 1234"</span>, <span class="key">type</span>:<span class="val">"4w"</span>, <span class="key">fuel</span>:<span class="val">"petrol"</span>,<br>
+&nbsp;<span class="key">mileage</span>:<span class="val">14</span>, <span class="key">owner_phone</span>:<span class="val">"9876..."</span>,<br>
+&nbsp;<span class="key">gps_enabled</span>:<span class="val">true</span>, <span class="key">status</span>:<span class="val">"active"</span>}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ MAP ══ -->
+    <div id="sub-map" class="content" style="display:none">
+      <div class="section-title">🗺️ Live Location Map</div>
+      <div class="section-sub">House location + all vehicle GPS — private to your household only 🔒</div>
+      <div class="g2" style="align-items:start">
+        <div>
+          <div class="map-container" style="height:400px">
+            <canvas id="map-canvas" style="width:100%;height:100%;display:block"></canvas>
+            <div id="map-house-pin" class="map-pin" style="left:50%;top:44%"><div class="pin-lbl" id="map-house-lbl">TN-CH-001</div><div class="pin-dot"></div><div class="pin-tail"></div></div>
+            <div id="map-veh1" class="map-pin vpin" style="left:60%;top:36%"><div class="pin-lbl">TN 09 AB 1234</div><div class="pin-dot"></div><div class="pin-tail"></div></div>
+            <div id="map-veh2" class="map-pin vpin" style="left:42%;top:55%"><div class="pin-lbl">TN 38 EF 3456</div><div class="pin-dot"></div><div class="pin-tail"></div></div>
+            <div style="position:absolute;top:10px;left:10px;background:rgba(6,13,8,0.85);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:10px;color:var(--text2)">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><div style="width:8px;height:8px;border-radius:50%;background:var(--emerald)"></div>House</div>
+              <div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;border-radius:50%;background:var(--amber)"></div>Vehicle</div>
+            </div>
+            <div style="position:absolute;bottom:10px;right:10px;display:flex;flex-direction:column;gap:4px">
+              <div onclick="drawMapCanvas(1)" style="width:28px;height:28px;background:var(--card);border:1px solid var(--border);border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:var(--text2)">+</div>
+              <div onclick="drawMapCanvas(-1)" style="width:28px;height:28px;background:var(--card);border:1px solid var(--border);border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:var(--text2)">−</div>
+            </div>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:var(--muted);text-align:center">🔒 Location visible only to household members</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="card">
+            <div class="wt">🏡 House Location</div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;font-size:13px">
+              <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">House ID</span><span style="font-family:'Cabinet Grotesk',sans-serif;font-weight:800;color:var(--lime)" id="map-hid">TN-CH-001</span></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">City</span><span id="map-city">Chennai</span></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">GPS</span><span style="font-family:monospace;font-size:11px;color:var(--teal)" id="map-gps">13.0418°N, 80.2341°E</span></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Members</span><span style="color:var(--emerald)" id="map-mem">4</span></div>
+            </div>
+            <button class="btn-p" style="margin-top:14px;font-size:12px;padding:10px" onclick="refreshGPS()">📍 Refresh GPS</button>
+          </div>
+          <div class="card"><div class="wt">🚗 Vehicle Tracking</div><div id="map-veh-list" style="display:flex;flex-direction:column;gap:10px;margin-top:10px"></div></div>
+          <div class="card" style="background:rgba(56,189,248,0.04);border-color:rgba(56,189,248,0.15)">
+            <div class="wt" style="color:var(--sky);font-size:13px">🔥 Firebase Realtime GPS</div>
+            <div class="code-block" style="margin-top:8px;font-size:10px">
+<span class="cmt">// Path: /gps/TN-CH-001/TN09AB1234</span><br>
+{lat:<span class="val">13.05</span>,lng:<span class="val">80.24</span>,speed:<span class="val">0</span>,ts:<span class="val">Date.now()</span>}<br><br>
+<span class="cmt">// Live listener in frontend:</span><br>
+onValue(ref(rtdb,<span class="val">`gps/${houseId}`</span>),(snap)=>{<br>
+&nbsp;&nbsp;updateMapPins(snap.val());<br>
+});
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TRACK ══ -->
+    <div id="sub-track" class="content" style="display:none">
+      <div class="section-title">⚡ Track Activity</div>
+      <div class="section-sub">All data auto-links to House ID <span id="track-hid" style="color:var(--lime);font-weight:700">TN-CH-001</span></div>
+      <div class="g2" style="margin-bottom:14px">
+        <div class="card">
+          <div class="wt">⚡ Electricity <span class="badge bl"><span class="live-dot"></span>IoT</span></div>
+          <div style="margin-top:10px">
+            <div class="rw"><input type="range" id="r-elec" min="0" max="30" value="5" oninput="updR('elec',this.value)"><div class="rv"><span id="v-elec">5</span> kWh</div></div>
+            <div class="tog-row"><div class="tog-lbl">❄️ AC running</div><div class="tog" onclick="this.classList.toggle('on')"></div></div>
+            <div class="tog-row"><div class="tog-lbl">☀️ Solar active</div><div class="tog on" id="t-solar" onclick="this.classList.toggle('on')"></div></div>
+            <div class="rw"><input type="range" id="r-solar" min="0" max="15" value="3" oninput="updR('solar',this.value)"><div class="rv"><span id="v-solar">3</span> kWh</div></div>
+            <div style="font-size:11px;color:var(--muted);background:var(--bg2);border-radius:9px;padding:9px;margin-top:8px;line-height:1.7">⚡ CO₂ = kWh × 0.7 · ☀️ Offset = solar × 0.7 (CEA India)</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="wt">🔥 LPG + 🚗 Transport</div>
+          <div style="margin-top:10px">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px">LPG cylinders/month</div>
+            <div class="stepper" style="margin-bottom:14px"><div class="step-btn" onclick="adjS('lpg',-1)">−</div><div class="step-val" id="v-lpg">1</div><div class="step-btn" onclick="adjS('lpg',1)">+</div><span style="font-size:12px;color:var(--muted)">cylinders</span></div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Fuel filled (litres)</div>
+            <div class="rw"><input type="range" id="r-fuel" min="0" max="60" value="5" oninput="updR('fuel',this.value)"><div class="rv"><span id="v-fuel">5</span> L</div></div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">
+              <div class="tab-btn active" style="padding:6px 12px;border-radius:8px;font-size:11px" onclick="selF(this,'petrol')">⛽ Petrol</div>
+              <div class="tab-btn" style="padding:6px 12px;border-radius:8px;font-size:11px" onclick="selF(this,'diesel')">🛢️ Diesel</div>
+              <div class="tab-btn" style="padding:6px 12px;border-radius:8px;font-size:11px" onclick="selF(this,'ev')">⚡ EV</div>
+              <div class="tab-btn" style="padding:6px 12px;border-radius:8px;font-size:11px" onclick="selF(this,'cng')">💨 CNG</div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);background:var(--bg2);border-radius:9px;padding:9px;line-height:1.7">🚗 CO₂ = litres × 2.3 (petrol) · Distance = litres × mileage</div>
+          </div>
+        </div>
+      </div>
+      <div class="g2" style="margin-bottom:14px">
+        <div class="card">
+          <div class="wt">🛒 Scope 3 Consumption</div>
+          <div style="margin-top:10px">
+            <div style="border:2px dashed rgba(52,211,100,0.2);border-radius:14px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(52,211,100,0.02);margin-bottom:12px" onclick="simUpload()" id="upload-zone">
+              <div style="font-size:24px;margin-bottom:6px" id="uz-icon">📤</div>
+              <div style="font-size:13px;color:var(--text2);font-weight:600" id="uz-text">Upload bill / UPI screenshot</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:3px">OCR auto-extraction · Food · Lifestyle</div>
+            </div>
+            <input class="inp" type="number" placeholder="₹ Amount" id="v-grocery" value="800" style="margin-bottom:8px">
+            <div style="display:flex;gap:6px">
+              <div class="tab-btn active" style="padding:6px 12px;border-radius:8px;font-size:11px" onclick="selCat(this,'food')">🥗 Food</div>
+              <div class="tab-btn" style="padding:6px 12px;border-radius:8px;font-size:11px" onclick="selCat(this,'mixed')">🧺 Mixed</div>
+              <div class="tab-btn" style="padding:6px 12px;border-radius:8px;font-size:11px" onclick="selCat(this,'high')">🛍️ High</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="wt">🌿 Plants & Offset</div>
+          <div style="margin-top:10px">
+            <div class="stepper" style="margin-bottom:12px"><div class="step-btn" onclick="adjS('plants',-1)">−</div><div class="step-val" id="v-plants">2</div><div class="step-btn" onclick="adjS('plants',1)">+</div><span style="font-size:12px;color:var(--muted)">plants/trees</span></div>
+            <button class="btn-p" style="font-size:12px;padding:11px;margin-bottom:10px" onclick="capturePhoto()">📸 Camera: Verify Plant + GPS</button>
+            <div id="photo-result" style="display:none;font-size:12px;color:var(--muted);padding:10px;background:var(--bg2);border-radius:10px;line-height:1.7"></div>
+          </div>
+        </div>
+      </div>
+      <button class="btn-p" style="max-width:380px" onclick="calcAll()">⚙️ Calculate Carbon & Update</button>
+      <div id="result-panel" style="display:none;margin-top:14px;background:rgba(52,211,100,0.04);border:1px solid rgba(52,211,100,0.18);border-radius:16px;padding:20px">
+        <div class="wt">📊 Result</div>
+        <div class="g4" style="margin:14px 0">
+          <div style="text-align:center"><div style="font-family:'Cabinet Grotesk',sans-serif;font-size:24px;font-weight:900;color:var(--rose)" id="r-e">—</div><div style="font-size:11px;color:var(--muted);margin-top:3px">Emission (kg)</div></div>
+          <div style="text-align:center"><div style="font-family:'Cabinet Grotesk',sans-serif;font-size:24px;font-weight:900;color:var(--amber)" id="r-r">—</div><div style="font-size:11px;color:var(--muted);margin-top:3px">Reduction (kg)</div></div>
+          <div style="text-align:center"><div style="font-family:'Cabinet Grotesk',sans-serif;font-size:24px;font-weight:900;color:var(--teal)" id="r-o">—</div><div style="font-size:11px;color:var(--muted);margin-top:3px">Offset (kg)</div></div>
+          <div style="text-align:center"><div style="font-family:'Cabinet Grotesk',sans-serif;font-size:24px;font-weight:900;color:var(--lime)" id="r-n">—</div><div style="font-size:11px;color:var(--muted);margin-top:3px">Net Carbon (kg)</div></div>
+        </div>
+        <div id="r-formula" style="background:var(--bg);border-radius:10px;padding:12px;font-family:monospace;font-size:11px;color:var(--muted);line-height:2"></div>
+        <button class="btn-p" style="margin-top:12px;max-width:200px" onclick="saveToDash()">✅ Save to Dashboard</button>
+      </div>
+    </div>
+
+    <!-- ══ QR & SCAN ══ -->
+    <div id="sub-qrcodes" class="content" style="display:none">
+      <div class="section-title">📱 QR Codes & Bill Scanner</div>
+      <div class="section-sub">House ID <span id="qr-hid" style="color:var(--lime);font-weight:700">TN-CH-001</span> · Scan any bill QR · Auto-fill or upload</div>
+      <div class="qr-master-grid" id="qr-grid"></div>
+      <div class="card"><div class="wt">📋 Scan Result</div><div id="scan-result" style="margin-top:10px;padding:14px;background:var(--bg2);border-radius:12px;font-size:12px;color:var(--muted);min-height:70px;line-height:1.8">Tap Scan / Auto-Fill on any card above...</div></div>
+    </div>
+
+    <!-- ══ CREDITS ══ -->
+    <div id="sub-credits" class="content" style="display:none">
+      <div class="section-title">💰 Credits & Rewards</div>
+      <div class="section-sub">House <span id="cr-hid" style="color:var(--lime);font-weight:700">TN-CH-001</span> · Immutable ledger</div>
+      <div class="cr-hero">
+        <div style="font-size:10px;color:rgba(240,253,244,0.4);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Total Balance</div>
+        <div class="cr-big" id="cr-bal">24.6</div>
+        <div style="font-size:13px;color:rgba(240,253,244,0.45);margin-top:6px">GreenCredit tokens · Cannot go negative · All tx logged</div>
+        <div style="display:flex;gap:24px;margin-top:18px;flex-wrap:wrap">
+          <div style="font-size:12px;color:rgba(240,253,244,0.4)">Earned: <span style="color:var(--emerald);font-weight:700">+18.2</span></div>
+          <div style="font-size:12px;color:rgba(240,253,244,0.4)">Used: <span style="color:var(--rose);font-weight:700">−4.5</span></div>
+          <div style="font-size:12px;color:rgba(240,253,244,0.4)">Status: <span style="color:var(--lime);font-weight:700">🔒 Secured</span></div>
+        </div>
+      </div>
+      <div class="redeem-grid">
+        <div class="rc" onclick="openR('bill','Electricity Bill Discount')"><div style="font-size:28px;margin-bottom:8px">💡</div><div style="font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:800;margin-bottom:3px">Electricity Bill</div><div style="font-size:11px;color:var(--muted)">Apply to TNEB payment</div><div style="display:inline-block;padding:4px 10px;background:rgba(52,211,100,0.12);border-radius:20px;font-size:10px;color:var(--emerald);margin-top:7px;font-weight:700">5 credits = ₹50</div></div>
+        <div class="rc" onclick="openR('grocery','Grocery Voucher')"><div style="font-size:28px;margin-bottom:8px">🛒</div><div style="font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:800;margin-bottom:3px">Grocery Voucher</div><div style="font-size:11px;color:var(--muted)">Partnered stores</div><div style="display:inline-block;padding:4px 10px;background:rgba(52,211,100,0.12);border-radius:20px;font-size:10px;color:var(--emerald);margin-top:7px;font-weight:700">3 credits = ₹30</div></div>
+        <div class="rc" onclick="openR('industry','Sell to Industry')"><div style="font-size:28px;margin-bottom:8px">🏭</div><div style="font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:800;margin-bottom:3px">Industry Market</div><div style="font-size:11px;color:var(--muted)">ESG compliance</div><div style="display:inline-block;padding:4px 10px;background:rgba(52,211,100,0.12);border-radius:20px;font-size:10px;color:var(--emerald);margin-top:7px;font-weight:700">₹80–120/credit</div></div>
+        <div class="rc" onclick="openR('ration','PDS Ration')"><div style="font-size:28px;margin-bottom:8px">🌾</div><div style="font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:800;margin-bottom:3px">PDS Ration</div><div style="font-size:11px;color:var(--muted)">Govt scheme</div><div style="display:inline-block;padding:4px 10px;background:rgba(52,211,100,0.12);border-radius:20px;font-size:10px;color:var(--emerald);margin-top:7px;font-weight:700">2 credits = 1kg</div></div>
+        <div class="rc" onclick="openR('lpg','LPG Discount')"><div style="font-size:28px;margin-bottom:8px">🔥</div><div style="font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:800;margin-bottom:3px">LPG Discount</div><div style="font-size:11px;color:var(--muted)">Next cylinder</div><div style="display:inline-block;padding:4px 10px;background:rgba(52,211,100,0.12);border-radius:20px;font-size:10px;color:var(--emerald);margin-top:7px;font-weight:700">8 credits = ₹80</div></div>
+        <div class="rc" onclick="openR('tree','Plant a Tree')"><div style="font-size:28px;margin-bottom:8px">🌳</div><div style="font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:800;margin-bottom:3px">Tree Drive</div><div style="font-size:11px;color:var(--muted)">Plantation program</div><div style="display:inline-block;padding:4px 10px;background:rgba(52,211,100,0.12);border-radius:20px;font-size:10px;color:var(--emerald);margin-top:7px;font-weight:700">1 credit = 1 tree</div></div>
+      </div>
+      <div class="card"><div class="wt">💳 Ledger <span class="badge bv">🔒 Immutable</span></div><table class="ledger-table" style="margin-top:12px"><thead><tr><th>Date</th><th>Activity</th><th>Earned</th><th>Used</th><th>Balance</th></tr></thead><tbody id="ledger-body"></tbody></table></div>
+    </div>
+
+    <!-- ══ FEASIBILITY GUIDE ══ -->
+    <div id="sub-feasibility" class="content" style="display:none">
+      <div class="section-title">🚀 How to Make This Project Feasible</div>
+      <div class="section-sub">A complete, honest roadmap — what to build NOW vs later, what judges care about, and how to present this professionally</div>
+
+      <!-- OVERALL PROGRESS -->
+      <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#0f3320,#1a2a1e)">
+        <div class="wt">📊 Project Completion Score</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px">
+          <div style="text-align:center"><div style="font-family:'Cabinet Grotesk',sans-serif;font-size:32px;font-weight:900;color:var(--emerald)">85%</div><div style="font-size:11px;color:var(--muted);margin-top:4px">Frontend UI</div><div class="progress-bar-wrap"><div class="progress-bar" style="width:85%;background:var(--emerald)"></div></div></div>
+          <div style="text-align:center"><div style="font-family:'Cabinet Grotesk',sans-serif;font-size:32px;font-weight:900;color:var(--amber)">40%</div><div style="font-size:11px;color:var(--muted);margin-top:4px">Backend Firebase</div><div class="progress-bar-wrap"><div class="progress-bar" style="width:40%;background:var(--amber)"></div></div></div>
+          <div style="text-align:center"><div style="font-family:'Cabinet Grotesk',sans-serif;font-size:32px;font-weight:900;color:var(--sky)">60%</div><div style="font-size:11px;color:var(--muted);margin-top:4px">IoT Hardware</div><div class="progress-bar-wrap"><div class="progress-bar" style="width:60%;background:var(--sky)"></div></div></div>
+          <div style="text-align:center"><div style="font-family:'Cabinet Grotesk',sans-serif;font-size:32px;font-weight:900;color:var(--violet)">70%</div><div style="font-size:11px;color:var(--muted);margin-top:4px">Demo Readiness</div><div class="progress-bar-wrap"><div class="progress-bar" style="width:70%;background:var(--violet)"></div></div></div>
+        </div>
+      </div>
+
+      <!-- MUST DO -->
+      <div class="feas-card">
+        <div class="feas-title">🔴 MUST DO — Before Demo Day <span class="feas-priority p-must">CRITICAL</span></div>
+        <div class="checklist">
+          <div class="check-item"><div class="check-icon">🔥</div><div class="check-text"><strong>Set up Firebase Project</strong> — Create project, enable Phone Auth, create Firestore DB. Takes 20 minutes. Without this, no real data saves.</div></div>
+          <div class="check-item"><div class="check-icon">🏠</div><div class="check-text"><strong>Pre-register 3 demo houses</strong> — TN-CH-001 (high emission), TN-CB-002 (eco-friendly), KA-BL-001 (EV household). Add to Firestore manually. Shows judges scalability.</div></div>
+          <div class="check-item"><div class="check-icon">⚡</div><div class="check-text"><strong>ESP32 electricity demo</strong> — Connect ACS712 current sensor to ESP32. Point to a bulb. Turn ON → kWh rises → CO₂ updates on dashboard. This is your strongest hardware demo.</div></div>
+          <div class="check-item"><div class="check-icon">📱</div><div class="check-text"><strong>Deploy to Firebase Hosting</strong> — Run "firebase deploy" to get a live URL. Let judges open it on THEIR phone. This is very impressive and takes 5 minutes.</div></div>
+          <div class="check-item"><div class="check-icon">🧾</div><div class="check-text"><strong>Print physical demo QR codes</strong> — Print 5 QR codes (electricity bill, LPG, petrol, grocery, lifestyle). Scan them with phone during demo. Judges can touch/feel it.</div></div>
+          <div class="check-item"><div class="check-icon">🎬</div><div class="check-text"><strong>Rehearse 60-second demo flow</strong> — Login → House ID → Turn bulb ON → Scan fuel QR → Add plant → Show credits. Do it 10 times till smooth.</div></div>
+        </div>
+      </div>
+
+      <!-- SHOULD DO -->
+      <div class="feas-card">
+        <div class="feas-title">🟡 SHOULD DO — Makes It Much Stronger <span class="feas-priority p-should">HIGH PRIORITY</span></div>
+        <div class="checklist">
+          <div class="check-item"><div class="check-icon">👥</div><div class="check-text"><strong>Test multi-member login</strong> — Register 2 phones to same House ID. Have one person log data. Show on second phone it appears on dashboard. Proves real household system.</div></div>
+          <div class="check-item"><div class="check-icon">☀️</div><div class="check-text"><strong>Solar panel demo</strong> — Even a small 5W solar panel with a toggle switch. Toggle ON → reduction number drops → net carbon falls → credits rise. Very visual.</div></div>
+          <div class="check-item"><div class="check-icon">📊</div><div class="check-text"><strong>Show 3 houses on dashboard</strong> — Switch between TN-CH-001, TN-CB-002, KA-BL-001. Each has different emission, different credits. Proves this is a platform, not a single demo.</div></div>
+          <div class="check-item"><div class="check-icon">📄</div><div class="check-text"><strong>Generate a real PDF report</strong> — Use jsPDF library. Download button produces a dated carbon report. Judges love tangible outputs.</div></div>
+          <div class="check-item"><div class="check-icon">🚗</div><div class="check-text"><strong>Vehicle emission comparison</strong> — Show house with petrol bike vs house with EV. Same distance = different CO₂. Proves your transport formula works correctly.</div></div>
+        </div>
+      </div>
+
+      <!-- WHAT JUDGES LOOK FOR -->
+      <div class="feas-card">
+        <div class="feas-title">⚖️ What Judges Actually Score You On <span class="feas-priority p-should">KNOW THIS</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--emerald);margin-bottom:10px">✅ What wins points</div>
+            <div class="checklist">
+              <div class="check-item"><div class="check-icon">🎯</div><div class="check-text"><strong>Working demo</strong> — Something actually runs. Even if limited scope.</div></div>
+              <div class="check-item"><div class="check-icon">🧠</div><div class="check-text"><strong>Clear problem statement</strong> — "Households can't track carbon easily. We fix that."</div></div>
+              <div class="check-item"><div class="check-icon">📈</div><div class="check-text"><strong>Scalability story</strong> — "This works for 1 house. At 10,000 houses it becomes a carbon marketplace."</div></div>
+              <div class="check-item"><div class="check-icon">🔬</div><div class="check-text"><strong>Scientific backing</strong> — IPCC factors, CEA grid factor, LCA method. Mention these.</div></div>
+              <div class="check-item"><div class="check-icon">💰</div><div class="check-text"><strong>Business model</strong> — Credit marketplace, ESG compliance for industry = real revenue.</div></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--rose);margin-bottom:10px">❌ What loses points</div>
+            <div class="checklist">
+              <div class="check-item"><div class="check-icon">⚠️</div><div class="check-text"><strong>Overclaming</strong> — "Fully automated" when it's not. Say "simulates" instead.</div></div>
+              <div class="check-item"><div class="check-icon">⚠️</div><div class="check-text"><strong>Demo fails</strong> — Test everything 3 times before. Have a backup video recording.</div></div>
+              <div class="check-item"><div class="check-icon">⚠️</div><div class="check-text"><strong>No data showing</strong> — Judges want to SEE numbers change in real time.</div></div>
+              <div class="check-item"><div class="check-icon">⚠️</div><div class="check-text"><strong>Unclear explanation</strong> — Practice your 60-second pitch: problem → solution → demo → impact.</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NICE TO HAVE -->
+      <div class="feas-card">
+        <div class="feas-title">🟢 NICE TO HAVE — If Time Allows <span class="feas-priority p-nice">BONUS</span></div>
+        <div class="checklist">
+          <div class="check-item"><div class="check-icon">🌿</div><div class="check-text"><strong>YOLO plant detection</strong> — Use a lightweight pre-trained model (MobileNet) to detect "plant" in camera photo. Even basic detection is impressive. Don't build from scratch.</div></div>
+          <div class="check-item"><div class="check-icon">📍</div><div class="check-text"><strong>Real GPS integration</strong> — Use browser navigator.geolocation for house pin. For vehicle, simulate updates every 30 seconds from a second phone.</div></div>
+          <div class="check-item"><div class="check-icon">🧾</div><div class="check-text"><strong>OCR bill reading</strong> — Use Tesseract.js (free, browser-based) to extract text from uploaded bill image. Extract ₹ amount automatically.</div></div>
+          <div class="check-item"><div class="check-icon">📱</div><div class="check-text"><strong>PWA (Progressive Web App)</strong> — Add manifest.json so judges can "install" it on phone like an app. Takes 10 minutes and looks very professional.</div></div>
+        </div>
+      </div>
+
+      <!-- FUTURE / REAL WORLD -->
+      <div class="feas-card">
+        <div class="feas-title">🔮 Future Roadmap — Tell Judges This <span class="feas-priority p-future">SCALE UP</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px">
+          <div style="padding:14px;background:var(--bg2);border-radius:12px;border:1px solid var(--border)">
+            <div style="font-size:16px;margin-bottom:6px">🏙️</div>
+            <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px">City Scale</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.6">Aggregate 10,000+ households. Sell verified reduction data to municipalities for carbon accounting.</div>
+          </div>
+          <div style="padding:14px;background:var(--bg2);border-radius:12px;border:1px solid var(--border)">
+            <div style="font-size:16px;margin-bottom:6px">🏭</div>
+            <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px">Industry Market</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.6">Companies buy household carbon credits for Scope 3 ESG compliance. ₹80–120 per credit = real income for households.</div>
+          </div>
+          <div style="padding:14px;background:var(--bg2);border-radius:12px;border:1px solid var(--border)">
+            <div style="font-size:16px;margin-bottom:6px">🤝</div>
+            <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px">API Integration</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.6">UPI payment APIs auto-pull bill data. Smart meters push real-time electricity. LPG SMS auto-updates cylinders.</div>
+          </div>
+          <div style="padding:14px;background:var(--bg2);border-radius:12px;border:1px solid var(--border)">
+            <div style="font-size:16px;margin-bottom:6px">🏛️</div>
+            <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px">Govt Integration</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.6">Link with PDS ration cards, PMUY LPG scheme, PM-KUSUM solar. Government-backed credit validation.</div>
+          </div>
+          <div style="padding:14px;background:var(--bg2);border-radius:12px;border:1px solid var(--border)">
+            <div style="font-size:16px;margin-bottom:6px">🤖</div>
+            <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px">AI Recommendations</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.6">Personalized tips: "Your AC uses 40% of emissions. Setting 24°C saves ₹200/month and 15 kg CO₂."</div>
+          </div>
+          <div style="padding:14px;background:var(--bg2);border-radius:12px;border:1px solid var(--border)">
+            <div style="font-size:16px;margin-bottom:6px">⛓️</div>
+            <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px">Blockchain Ledger</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.6">Immutable credit verification on-chain. Makes credits tradeable on carbon exchanges. Institutional credibility.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PITCH LINE -->
+      <div class="feas-card" style="background:linear-gradient(135deg,#0f3320,#1a2a1e);border-color:rgba(52,211,100,0.3);text-align:center">
+        <div style="font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">Your Winning Pitch Line</div>
+        <div style="font-family:'Cabinet Grotesk',sans-serif;font-size:22px;font-weight:900;line-height:1.4;background:linear-gradient(90deg,var(--emerald),var(--lime));-webkit-background-clip:text;-webkit-text-fill-color:transparent;max-width:700px;margin:0 auto">
+          "We built a personal carbon account for every household — measuring real emissions, rewarding real reductions, and connecting households to industry carbon markets."
+        </div>
+        <div style="margin-top:16px;font-size:13px;color:var(--muted)">Follow with: live IoT demo → QR scan → dashboard update → credits → industry sale</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SCANNER MODAL -->
+<div class="scanner-modal" id="scanner-modal">
+  <div style="font-family:'Cabinet Grotesk',sans-serif;font-size:17px;font-weight:900;color:var(--emerald)">📷 Scan Bill QR Code</div>
+  <div class="scanner-box">
+    <video id="scanner-video" autoplay muted playsinline></video>
+    <canvas id="scan-canvas"></canvas>
+    <div style="position:absolute;inset:0;pointer-events:none">
+      <div class="scan-corner sc-tl"></div><div class="scan-corner sc-tr"></div>
+      <div class="scan-corner sc-bl"></div><div class="scan-corner sc-br"></div>
+      <div class="scan-line"></div>
+    </div>
+  </div>
+  <div style="font-family:'Cabinet Grotesk',sans-serif;font-size:15px;font-weight:800;color:var(--text)" id="scanner-status">Align QR code within frame</div>
+  <div style="font-size:12px;color:var(--muted);text-align:center;max-width:260px" id="scanner-hint">Point camera at QR code on your bill</div>
+  <button onclick="closeScanner()" style="padding:11px 26px;background:none;border:1px solid var(--border);border-radius:11px;color:var(--muted);cursor:pointer;font-size:13px">✕ Cancel</button>
+</div>
+
+<!-- MODAL -->
+<div class="modal-ov" id="modal">
+  <div class="modal">
+    <div class="modal-title" id="m-title">Redeem Credits</div>
+    <div class="modal-sub" id="m-sub">Enter credits to redeem</div>
+    <input type="number" class="inp" id="m-amt" placeholder="e.g. 5" style="margin-bottom:12px">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-confirm" onclick="confirmRedeem()">Confirm →</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="t-icon">✅</span><span id="t-msg"></span></div>
+
+<script>
+// ═══ STATE ═══
+const APP = {
+  phone:'', page:'dashboard', balance:24.6, baseline:5,
+  redeemType:'', fuel:'petrol', groceryCat:'food', plantType:'tree',
+  memberCount:4, houseType:'apt',
+  scannerStream:null, scanInterval:null, currentScanCat:'', currentHouse:0,
+  fleet:{'2w-petrol':1,'2w-ev':0,'4w-petrol':1,'4w-ev':0},
+  vehicles:[
+    {plate:'TN 09 AB 1234',type:'4w',fuel:'petrol',mileage:14,owner:'9876543210',gps:true,lat:13.0527,lng:80.2497,status:'parked'},
+    {plate:'TN 38 EF 3456',type:'2w',fuel:'petrol',mileage:45,owner:'9123456780',gps:true,lat:13.0640,lng:80.2520,status:'active'}
+  ],
+  houses:[
+    {id:'TN-CH-001',city:'Chennai',addr:'T Nagar, Chennai',members:4,lat:13.0418,lng:80.2341,netCarbon:3.8,credits:24.6,
+     memberList:[
+       {name:'Rajesh Kumar',phone:'9876543210',role:'owner',relation:'Owner',status:'active',color:'#34d364'},
+       {name:'Priya Kumar',phone:'9123456780',role:'member',relation:'Spouse',status:'active',color:'#38bdf8'},
+       {name:'Arjun Kumar',phone:'9234567890',role:'member',relation:'Child',status:'active',color:'#fbbf24'},
+       {name:'Kavitha R',phone:'9345678901',role:'viewer',relation:'Parent',status:'pending',color:'#8b5cf6'}
+     ]},
+    {id:'TN-CB-002',city:'Coimbatore',addr:'RS Puram, Coimbatore',members:3,lat:11.0168,lng:76.9558,netCarbon:1.9,credits:42.7,memberList:[{name:'Meena S',phone:'9456789012',role:'owner',relation:'Owner',status:'active',color:'#34d364'},{name:'Suresh S',phone:'9567890123',role:'member',relation:'Spouse',status:'active',color:'#38bdf8'}]},
+    {id:'KA-BL-001',city:'Bangalore',addr:'Koramangala, Bangalore',members:5,lat:12.9352,lng:77.6245,netCarbon:0.8,credits:78.3,memberList:[{name:'Deepa N',phone:'9678901234',role:'owner',relation:'Owner',status:'active',color:'#34d364'}]}
+  ],
+  qrCards:[
+    {id:'elec',icon:'⚡',title:'Electricity Bill',desc:'Scan after paying bill',scope:'s2',scopeLbl:'Scope 2',color:'#fbbf24',demo:{category:'electricity',units:150,amount_rs:890,co2_kg:105}},
+    {id:'lpg',icon:'🔥',title:'LPG Cylinder',desc:'Scan when delivered',scope:'s1',scopeLbl:'Scope 1',color:'#f97316',demo:{category:'lpg',cylinders:1,provider:'Indane',amount_rs:903,co2_kg:42}},
+    {id:'fuel',icon:'⛽',title:'Petrol / Fuel',desc:'Scan pump receipt',scope:'s1',scopeLbl:'Scope 1',color:'#38bdf8',demo:{category:'transport',fuel:'petrol',litres:5,amount_rs:510,dist_km:200,co2_kg:11.5}},
+    {id:'grocery',icon:'🛒',title:'Grocery Bill',desc:'Scan store receipt',scope:'s3',scopeLbl:'Scope 3',color:'#8b5cf6',demo:{category:'grocery',items:'Rice,Dal,Veg,Milk',amount_rs:1200,co2_kg:6.0}},
+    {id:'lifestyle',icon:'🛍️',title:'Lifestyle',desc:'E-commerce & retail',scope:'s3',scopeLbl:'Scope 3',color:'#f43f5e',demo:{category:'lifestyle',items:'Clothing',amount_rs:3000,co2_kg:24}},
+    {id:'house',icon:'🏡',title:'House Master QR',desc:'Household identity',scope:'',scopeLbl:'Verified',color:'#34d364',demo:{type:'house_identity',members:4,city:'Chennai'}}
+  ],
+  ledger:[
+    {date:'22 Mar',act:'Solar reduction',earned:1.8,used:0},{date:'21 Mar',act:'Low fuel day',earned:1.2,used:0},
+    {date:'21 Mar',act:'Grocery voucher',earned:0,used:2.0},{date:'20 Mar',act:'Plant offset',earned:0.4,used:0},
+    {date:'19 Mar',act:'Industry sale',earned:3.0,used:0},{date:'18 Mar',act:'Bill discount',earned:0,used:2.5}
+  ]
+};
+
+// ═══ LOGIN ═══
+
+function backToPhone(){document.getElementById('otp-step').style.display='none';document.getElementById('phone-step').style.display='block'}
+function otpNext(el,i){if(el.value.length===1&&i<5)document.querySelectorAll('.otp-box')[i+1].focus()}
+
+// ═══ HOUSE SWITCHER ═══
+function loadHouse(idx){
+  APP.currentHouse=idx;const h=APP.houses[idx];APP.balance=h.credits;
+  ['nav-hid','dash-hid','db-hid2','mem-hid','veh-hid','track-hid','qr-hid','cr-hid','map-hid'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=h.id});
+  document.getElementById('cr-bal').textContent=h.credits.toFixed(1);
+  const dm=document.getElementById('dash-members');if(dm)dm.textContent=h.members+' members';
+  const dv=document.getElementById('dash-vehs');if(dv)dv.textContent=APP.vehicles.length+' vehicles';
+  renderHousePanel();renderMembersList();renderVehiclesPage();renderMapVehicles();renderQRGrid();
+  
+  // ── REALTIME LISTENER ──
+  const today = new Date().toISOString().split('T')[0];
+  const houseId = APP.houses[idx].id;
+  if (window.houseListener) window.houseListener();
+  window.houseListener = db.collection('houses').doc(houseId)
+    .collection('daily_data').doc(today)
+    .onSnapshot(snap => {
+      if (snap.exists) {
+        const d = snap.data();
+        const eEl = document.getElementById('kpi-e');
+        const cEl = document.getElementById('kpi-c');
+        const crEl = document.getElementById('cr-bal');
+        if (eEl) eEl.textContent = (d.emission_kg || 0).toFixed(1);
+        if (cEl) cEl.textContent = (d.net_carbon_kg || 0).toFixed(1);
+        if (crEl) crEl.textContent = (d.credits_earned || 0).toFixed(1);
+        APP.houses[idx].credits = d.credits_earned || 0;
+        APP.houses[idx].netCarbon = d.net_carbon_kg || 0;
+      }
+    });
+
+}
+function toggleHousePanel(){document.getElementById('house-panel').classList.toggle('open')}
+document.addEventListener('click',e=>{const p=document.getElementById('house-panel');if(p.classList.contains('open')&&!p.contains(e.target)&&!e.target.closest('.house-switcher'))p.classList.remove('open')});
+function renderHousePanel(){const list=document.getElementById('house-list');list.innerHTML=APP.houses.map((h,i)=>`<div class="hp-house ${i===APP.currentHouse?'sel':''}" onclick="switchHouse(${i})"><div class="hp-icon">${i===0?'🏢':i===1?'🏠':'🌿'}</div><div><div class="hp-id">${h.id}</div><div class="hp-addr">${h.addr} · ${h.members} members · ${h.credits.toFixed(1)} credits</div></div></div>`).join('')}
+function switchHouse(idx){loadHouse(idx);document.getElementById('house-panel').classList.remove('open');if(APP.page==='dashboard'){initDashCharts();renderEmiList();}if(APP.page==='analytics')initAnCharts();toast('🏡','Switched to '+APP.houses[idx].id)}
+function addNewHouseFlow(){document.getElementById('house-panel').classList.remove('open');goto('house');toast('🏡','Register your new house below')}
+
+// ═══ NAV ═══
+function goto(p){
+  APP.page=p;
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.p===p));
+  document.querySelectorAll('[id^="sub-"]').forEach(s=>s.style.display='none');
+  document.getElementById('sub-'+p).style.display='block';
+  if(p==='dashboard'){initDashCharts();renderEmiList();document.getElementById('dash-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})}
+  if(p==='members')renderMembersList();
+  if(p==='vehicles')renderVehiclesPage();
+  if(p==='map'){drawMapCanvas();renderMapVehicles();}
+  if(p==='credits')renderLedger();
+  if(p==='qrcodes')renderQRGrid();
+}
+
+// ═══ MEMBERS ═══
+function switchMemberTab(el,tab){document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));document.getElementById('tp-'+tab).classList.add('active')}
+function renderMembersList(){
+  const h=APP.houses[APP.currentHouse];
+  const badge=document.getElementById('member-count-badge');if(badge)badge.textContent=h.memberList.length+' members';
+  const list=document.getElementById('members-list');if(!list)return;
+  list.innerHTML=h.memberList.map((m,i)=>`
+    <div class="member-row">
+      <div class="member-av" style="background:${m.color}">${m.name[0]}</div>
+      <div class="member-info">
+        <div class="member-name">${m.name}</div>
+        <div class="member-phone">+91 ${m.phone.replace(/(\d{4})(\d{3})(\d{3})/,'$1 $2 $3')}</div>
+        <div>
+          <span class="member-role ${m.role==='owner'?'role-owner':m.status==='pending'?'role-pending':'role-member'}">${m.role==='owner'?'👑 Owner':m.status==='pending'?'⏳ Pending':'✅ '+m.role}</span>
+          <span style="font-size:10px;color:var(--muted);margin-left:8px">${m.relation}</span>
+        </div>
+      </div>
+      ${m.role!=='owner'?`<button class="btn-danger" onclick="removeMember(${i})">Remove</button>`:''}
+    </div>`).join('');
+}
+function addMember(){
+  const name=document.getElementById('new-name').value.trim();
+  const phone=document.getElementById('new-phone').value.trim().replace(/\D/g,'');
+  const role=document.getElementById('new-role').value;
+  const rel=document.getElementById('new-relation').value;
+  if(!name||phone.length<10){toast('⚠️','Enter name and valid phone');return}
+  const h=APP.houses[APP.currentHouse];
+  const colors=['#34d364','#38bdf8','#fbbf24','#f97316','#8b5cf6','#f43f5e','#2dd4bf'];
+  h.memberList.push({name,phone,role,relation:rel,status:'pending',color:colors[h.memberList.length%colors.length]});
+  h.members=h.memberList.length;
+  const dm=document.getElementById('dash-members');if(dm)dm.textContent=h.members+' members';
+  document.getElementById('new-name').value='';document.getElementById('new-phone').value='';
+  renderMembersList();
+  toast('📱',`Invite sent to ${name} — OTP will link them to ${h.id}`);
+}
+function removeMember(idx){
+  const h=APP.houses[APP.currentHouse];
+  const name=h.memberList[idx].name;
+  h.memberList.splice(idx,1);h.members=h.memberList.length;
+  renderMembersList();toast('🗑️',name+' removed from '+h.id);
+}
+function linkToHouse(){
+  const phone=document.getElementById('link-phone').value.trim();
+  const target=document.getElementById('link-target-hid').value.trim().toUpperCase();
+  const type=document.getElementById('link-type').value;
+  if(!phone||!target){toast('⚠️','Enter phone and target House ID');return}
+  toast('🔗',`Phone ${phone} ${type==='move'?'moved to':'linked to'} ${target} · Firebase updated`);
+}
+
+// ═══ VEHICLES ═══
+let vehicleRowCount=0;
+function adjFleet(key,d){
+  const el=document.getElementById('fleet-'+key);
+  if(!el)return;
+  APP.fleet[key]=Math.max(0,(APP.fleet[key]||0)+d);
+  el.textContent=APP.fleet[key];
+  updateFleetSummary();
+}
+function updateFleetSummary(){
+  const emV=(APP.fleet['2w-petrol']||0)+(APP.fleet['4w-petrol']||0);
+  const grV=(APP.fleet['2w-ev']||0)+(APP.fleet['4w-ev']||0);
+  const total=emV+grV;
+  const el=document.getElementById('fleet-summary');
+  if(el)el.innerHTML=`📊 Total fleet: <span style="color:var(--text2);font-weight:700">${total} vehicle${total!==1?'s':''}</span> · Emission vehicles: <span style="color:var(--rose);font-weight:700">${emV}</span> · Green vehicles: <span style="color:var(--emerald);font-weight:700">${grV}</span>`;
+  const b=document.getElementById('veh-count-badge');if(b)b.textContent=total+' vehicles';
+}
+function addVehicleRow(){
+  vehicleRowCount++;
+  const container=document.getElementById('vehicle-rows');
+  const vtype=vehicleRowCount%2===0?'2w':'4w';
+  const div=document.createElement('div');
+  div.className='veh-input-row';div.id='vr-'+vehicleRowCount;
+  div.innerHTML=`
+    <div class="veh-type-badge" style="background:rgba(52,211,100,0.1);color:var(--emerald);border:1px solid rgba(52,211,100,0.2)">
+      🚗 Vehicle ${vehicleRowCount}
+    </div>
+    <button class="remove-veh" onclick="removeVehRow(${vehicleRowCount})">✕</button>
+    <div class="veh-input-grid">
+      <div class="fl" style="margin:0"><label>Number Plate</label><input class="inp" placeholder="TN 09 AB 1234" style="font-size:14px;letter-spacing:2px;font-weight:700;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="fl" style="margin:0"><label>Vehicle Type</label>
+        <select class="inp"><option>🏍️ Two-Wheeler (2W)</option><option>🚗 Four-Wheeler (4W)</option><option>🚐 Van / SUV</option></select>
+      </div>
+      <div class="fl" style="margin:0"><label>Fuel Type</label>
+        <select class="inp"><option>⛽ Petrol</option><option>🛢️ Diesel</option><option>⚡ Electric (EV)</option><option>💨 CNG</option></select>
+      </div>
+      <div class="fl" style="margin:0"><label>Mileage (km/L or km/charge)</label><input class="inp" type="number" placeholder="e.g. 40" value="40"></div>
+      <div class="fl" style="margin:0"><label>Owner (Member)</label>
+        <select class="inp">${APP.houses[APP.currentHouse].memberList.map(m=>`<option>${m.name}</option>`).join('')}</select>
+      </div>
+      <div class="fl" style="margin:0"><label>GPS Tracking</label>
+        <div class="tog-row" style="border:none;padding:6px 0"><div class="tog-lbl" style="font-size:12px">📍 Enable GPS</div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+      </div>
+    </div>
+    <button class="btn-sm" style="margin-top:12px;font-size:12px" onclick="saveVehicleRow(${vehicleRowCount})">💾 Save Vehicle</button>`;
+  container.appendChild(div);
+}
+function removeVehRow(id){const el=document.getElementById('vr-'+id);if(el)el.remove()}
+function saveVehicleRow(id){toast('✅','Vehicle saved and linked to '+APP.houses[APP.currentHouse].id);const el=document.getElementById('vr-'+id);if(el){el.style.borderColor='rgba(52,211,100,0.4)';el.style.background='rgba(52,211,100,0.03)';}}
+function renderVehiclesPage(){
+  renderMapVehicles();
+  const rv=document.getElementById('reg-vehicles');
+  if(!rv)return;
+  rv.innerHTML=APP.vehicles.map((v,i)=>`
+    <div class="veh-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div class="veh-plate-display">${v.plate}</div>
+        <span style="font-size:18px">${v.type==='4w'?'🚗':'🏍️'}</span>
+      </div>
+      <div class="veh-detail">${v.type==='4w'?'Four-Wheeler':'Two-Wheeler'} · ${v.fuel.toUpperCase()} · ${v.mileage>0?v.mileage+' km/L':'Electric'}</div>
+      <div class="veh-detail">Owner: ${APP.houses[APP.currentHouse].memberList.find(m=>m.phone===v.owner)?.name||v.owner}</div>
+      <div>
+        <span class="veh-gps-tag">📍 ${v.lat.toFixed(4)}°N, ${v.lng.toFixed(4)}°E</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;margin-left:6px;${v.status==='active'?'background:rgba(52,211,100,0.12);color:var(--emerald)':'background:rgba(251,191,36,0.12);color:var(--amber)'}">${v.status==='active'?'🟢 Moving':'🟡 Parked'}</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;margin-left:6px;${v.fuel==='ev'||v.fuel==='cng'?'background:rgba(52,211,100,0.12);color:var(--emerald)':'background:rgba(244,63,94,0.12);color:var(--rose)'}"> ${v.fuel==='ev'||v.fuel==='cng'?'✅ Green':'⚠️ Emission'}</span>
+      </div>
+    </div>`).join('');
+}
+
+// ═══ MAP ═══
+function drawMapCanvas(zoom){
+  const canvas=document.getElementById('map-canvas');if(!canvas)return;
+  canvas.width=canvas.offsetWidth||600;canvas.height=canvas.offsetHeight||400;
+  const ctx=canvas.getContext('2d');const w=canvas.width,h=canvas.height;
+  ctx.fillStyle='#0c1810';ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle='rgba(52,211,100,0.05)';ctx.lineWidth=1;
+  for(let x=0;x<w;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
+  for(let y=0;y<h;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+  [[h*.3,w],[h*.5,w],[h*.7,w]].forEach(([y,maxW])=>{ctx.strokeStyle='rgba(52,211,100,0.1)';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(maxW,y);ctx.stroke()});
+  [[w*.25,h],[w*.5,h],[w*.75,h]].forEach(([x,maxH])=>{ctx.strokeStyle='rgba(52,211,100,0.08)';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,maxH);ctx.stroke()});
+  [[.1,.1,.12,.16],[.32,.06,.14,.2],[.62,.1,.13,.18],[.08,.55,.11,.12],[.42,.56,.15,.13],[.66,.55,.11,.14]].forEach(([bx,by,bw,bh])=>{ctx.fillStyle='rgba(52,211,100,0.04)';ctx.strokeStyle='rgba(52,211,100,0.08)';ctx.lineWidth=1;ctx.fillRect(bx*w,by*h,bw*w,bh*h);ctx.strokeRect(bx*w,by*h,bw*w,bh*h)});
+  const hd=APP.houses[APP.currentHouse];
+  ctx.fillStyle='rgba(52,211,100,0.25)';ctx.font='bold 10px monospace';ctx.fillText(hd.city+' — '+hd.id,10,h-10);
+  const lbl=document.getElementById('map-house-lbl');if(lbl)lbl.textContent=hd.id;
+  if(zoom)toast('🗺️','Zoom adjusted');
+}
+function renderMapVehicles(){
+  const list=document.getElementById('map-veh-list');if(!list)return;
+  list.innerHTML=APP.vehicles.map((v,i)=>`
+    <div style="padding:11px;background:var(--bg2);border-radius:11px;border:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="font-family:'Cabinet Grotesk',sans-serif;font-size:14px;font-weight:800;color:var(--amber)">${v.plate}</div>
+        <span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;${v.status==='active'?'background:rgba(52,211,100,0.12);color:var(--emerald)':'background:rgba(251,191,36,0.12);color:var(--amber)'}">${v.status==='active'?'🟢 Moving':'🟡 Parked'}</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px">📍 ${v.lat.toFixed(4)}°N, ${v.lng.toFixed(4)}°E</div>
+      <div style="font-size:11px;color:var(--muted);">${v.fuel.toUpperCase()} · ${v.type==='4w'?'4-Wheeler':'2-Wheeler'}</div>
+    </div>`).join('');
+  const m1=document.getElementById('map-veh1');const m2=document.getElementById('map-veh2');
+  if(m1)m1.style.display=APP.vehicles.length>0?'flex':'none';
+  if(m2)m2.style.display=APP.vehicles.length>1?'flex':'none';
+  const gps=document.getElementById('map-gps');const h=APP.houses[APP.currentHouse];
+  if(gps)gps.textContent=h.lat+'°N, '+h.lng+'°E';
+  const mc=document.getElementById('map-mem');if(mc)mc.textContent=h.members;
+  const mc2=document.getElementById('map-city');if(mc2)mc2.textContent=h.city;
+}
+function refreshGPS(){
+  navigator.geolocation?navigator.geolocation.getCurrentPosition(pos=>{const el=document.getElementById('map-gps');if(el)el.textContent=pos.coords.latitude.toFixed(4)+'°N, '+pos.coords.longitude.toFixed(4)+'°E';toast('📍','GPS updated!')},()=>toast('📍','GPS: '+APP.houses[APP.currentHouse].lat+'°N (demo)')):toast('📍','GPS demo updated');
+}
+
+// ═══ HOUSE REGISTRATION ═══
+let memberCount=4,houseType='apt';
+function adjM(d){memberCount=Math.max(1,memberCount+d);document.getElementById('m-val').textContent=memberCount}
+function selHT(t){document.getElementById('ht-apt').classList.toggle('sel',t==='apt');document.getElementById('ht-ind').classList.toggle('sel',t==='ind');houseType=t}
+function registerHouse(){
+  const owner=document.getElementById('h-owner').value||'Owner';
+  const addr=document.getElementById('h-addr').value||'Address, City';
+  const city=document.getElementById('h-city').value;
+  const stateCode=city==='Bangalore'||city==='Mysore'?'KA':city==='Mumbai'||city==='Pune'?'MH':city==='Delhi'?'DL':city==='Hyderabad'?'TS':'TN';
+  const cityCode=city.slice(0,2).toUpperCase();
+  const newId=stateCode+'-'+cityCode+'-'+String(Math.floor(Math.random()*9000)+1000);
+  APP.houses.push({id:newId,city,addr,members:memberCount,lat:13.08,lng:80.27,netCarbon:4.5,credits:0,
+    memberList:[{name:owner,phone:APP.phone||'9876543210',role:'owner',relation:'Owner',status:'active',color:'#34d364'}]});
+  document.getElementById('h-id-display').textContent=newId;
+  document.getElementById('h-addr-display').textContent=addr+' · '+memberCount+' members';
+  drawQR(document.getElementById('h-qr-wrap'),newId);
+  renderHousePanel();
+  toast('🏡','House registered! ID: '+newId+' — Now go to Members tab to add family');
+}
+function drawQR(container,text){
+  container.innerHTML='';const c=document.createElement('canvas');c.width=130;c.height=130;
+  const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,130,130);
+  ctx.fillStyle='#34d364';
+  for(let i=0;i<9;i++)for(let j=0;j<9;j++){if((i*7+j*3+text.charCodeAt((i+j)%text.length))%3===0)ctx.fillRect(8+i*12,8+j*12,10,10)}
+  [[0,0],[6,0],[0,6]].forEach(([x,y])=>{ctx.fillStyle='#34d364';ctx.fillRect(8+x*12,8+y*12,36,36);ctx.fillStyle='#fff';ctx.fillRect(12+x*12,12+y*12,28,28);ctx.fillStyle='#34d364';ctx.fillRect(16+x*12,16+y*12,20,20)});
+  ctx.fillStyle='#444';ctx.font='5px monospace';ctx.fillText(text.slice(0,18),4,127);
+  container.appendChild(c);
+}
+
+// ═══ QR GRID ═══
+function renderQRGrid(){
+  const grid=document.getElementById('qr-grid');if(!grid)return;
+  const h=APP.houses[APP.currentHouse];
+  grid.innerHTML=APP.qrCards.map(qr=>`
+    <div class="qr-card">
+      <div style="font-size:24px;margin-bottom:6px">${qr.icon}</div>
+      <div style="font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:800;margin-bottom:3px">${qr.title}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${qr.desc}</div>
+      ${qr.scope?`<span class="scope-tag ${qr.scope}" style="margin-bottom:8px;display:inline-block">${qr.scopeLbl}</span>`:'<span class="badge bv" style="margin-bottom:8px">🔒 Verified</span>'}
+      <div style="width:120px;height:120px;margin:8px auto;background:#fff;border-radius:10px;padding:7px;display:flex;align-items:center;justify-content:center"><canvas id="qrc-${qr.id}" width="106" height="106"></canvas></div>
+      <div class="qr-btns">
+        <button class="qr-btn" onclick="openScanner('${qr.id}')">📷 Scan</button>
+        <button class="qr-btn" onclick="autoFill('${qr.id}')">🔄 Auto</button>
+        <button class="qr-btn" onclick="simUpload2('${qr.id}')">📤 Upload</button>
+      </div>
+    </div>`).join('');
+  setTimeout(()=>{APP.qrCards.forEach(qr=>{const c=document.getElementById('qrc-'+qr.id);if(c){const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,106,106);ctx.fillStyle=qr.color;for(let i=0;i<7;i++)for(let j=0;j<7;j++){if((i*7+j*3+(h.id+qr.id).charCodeAt((i+j)%(h.id.length+qr.id.length)))%3===0)ctx.fillRect(6+i*12,6+j*12,10,10)}[[0,0],[4,0],[0,4]].forEach(([x,y])=>{ctx.fillStyle=qr.color;ctx.fillRect(6+x*12,6+y*12,36,36);ctx.fillStyle='#fff';ctx.fillRect(10+x*12,10+y*12,28,28);ctx.fillStyle=qr.color;ctx.fillRect(14+x*12,14+y*12,20,20)})}})},60);
+}
+function autoFill(id){const qr=APP.qrCards.find(q=>q.id===id);if(!qr)return;const h=APP.houses[APP.currentHouse];const d={...qr.demo,house_id:h.id,timestamp:new Date().toISOString(),verified:true,source:'upi_auto'};showResult(qr.icon,qr.title,d);toast('🔄','Auto-filled: '+qr.title)}
+function simUpload2(id){toast('📤','Uploading & running OCR...');setTimeout(()=>autoFill(id),1400)}
+function showResult(icon,title,data){
+  document.getElementById('scan-result').innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><span style="font-size:20px">${icon}</span><div style="font-family:'Cabinet Grotesk',sans-serif;font-size:14px;font-weight:800;color:var(--emerald)">${title} — Verified ✓</div><span class="badge bv" style="margin-left:auto">Linked: ${data.house_id}</span></div><div style="background:var(--bg);border-radius:9px;padding:12px;font-family:monospace;font-size:11px;line-height:2;color:var(--text2)">${Object.entries(data).map(([k,v])=>`<span style="color:var(--sky)">${k}</span>: <span style="color:var(--lime)">${JSON.stringify(v)}</span>`).join('<br>')}</div><div style="margin-top:8px;font-size:11px;color:var(--muted)">✅ Saved to Firebase → houses/${data.house_id}/transactions/</div>`;
+}
+
+// ═══ SCANNER ═══
+function openScanner(id){
+  APP.currentScanCat=id;document.getElementById('scanner-modal').classList.add('open');
+  document.getElementById('scanner-status').textContent='Starting camera...';
+  navigator.mediaDevices&&navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})
+    .then(s=>{APP.scannerStream=s;const v=document.getElementById('scanner-video');v.srcObject=s;v.play();document.getElementById('scanner-status').textContent='Align QR in frame';startQRScan()})
+    .catch(()=>{document.getElementById('scanner-status').textContent='Simulating scan...';setTimeout(()=>{closeScanner();autoFill(APP.currentScanCat);},2000)});
+}
+function startQRScan(){const v=document.getElementById('scanner-video');const c=document.getElementById('scan-canvas');const ctx=c.getContext('2d');APP.scanInterval=setInterval(()=>{if(v.readyState===v.HAVE_ENOUGH_DATA){c.width=v.videoWidth;c.height=v.videoHeight;ctx.drawImage(v,0,0,c.width,c.height);try{const img=ctx.getImageData(0,0,c.width,c.height);const code=window.jsQR&&jsQR(img.data,img.width,img.height);if(code){closeScanner();let d;try{d=JSON.parse(code.data)}catch{d={raw:code.data}};d.house_id=APP.houses[APP.currentHouse].id;const qr=APP.qrCards.find(q=>q.id===APP.currentScanCat)||{icon:'📋',title:'Bill'};showResult(qr.icon,qr.title,{...d,timestamp:new Date().toISOString(),verified:true,source:'camera_scan'});toast('📷','QR Scanned!')}}catch(e){}}},250)}
+function closeScanner(){document.getElementById('scanner-modal').classList.remove('open');if(APP.scannerStream){APP.scannerStream.getTracks().forEach(t=>t.stop());APP.scannerStream=null}if(APP.scanInterval){clearInterval(APP.scanInterval);APP.scanInterval=null}}
+document.getElementById('scanner-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeScanner()});
+
+// ═══ TRACK ═══
+function updR(k,v){document.getElementById('v-'+k).textContent=v;const el=document.getElementById('r-'+k);if(el){const p=((v-el.min)/(el.max-el.min))*100;el.style.setProperty('--val',p+'%')}}
+function adjS(k,d){const el=document.getElementById('v-'+k);let v=parseInt(el.textContent)+d;if(v<0)v=0;el.textContent=v}
+function selF(el,f){el.closest('div').querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');APP.fuel=f}
+function selCat(el,c){el.closest('div').querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');APP.groceryCat=c}
+function simUpload(){document.getElementById('uz-icon').textContent='⏳';document.getElementById('uz-text').textContent='OCR reading bill...';setTimeout(()=>{document.getElementById('uz-icon').textContent='✅';document.getElementById('uz-text').textContent='Extracted: Rice₹120 Dal₹90 Veg₹200 Milk₹80 = ₹490';toast('🛒','Bill extracted — linked to '+APP.houses[APP.currentHouse].id)},1500)}
+function capturePhoto(){const res=document.getElementById('photo-result');res.style.display='block';res.textContent='📷 Opening camera...';navigator.mediaDevices&&navigator.mediaDevices.getUserMedia({video:true}).then(s=>{s.getTracks().forEach(t=>t.stop());const h=APP.houses[APP.currentHouse];res.innerHTML=`✅ <strong style="color:var(--emerald)">Plant captured!</strong><br>📍 GPS: ${h.lat.toFixed(4)}°N, ${h.lng.toFixed(4)}°E · 🕐 ${new Date().toLocaleTimeString()}<br>🌳 Type: ${APP.plantType} · House: ${h.id} · Next verify: 7 days`;toast('📸','Plant GPS-tagged and verified')}).catch(()=>{const h=APP.houses[APP.currentHouse];res.innerHTML=`✅ <strong>Plant logged (demo)</strong><br>📍 GPS: ${h.lat.toFixed(4)}°N, ${h.lng.toFixed(4)}°E<br>🌳 Type: ${APP.plantType} · House: ${h.id}`;toast('📸','Plant captured!')})}
+function calcAll(){
+  const elec=parseFloat(document.getElementById('v-elec').textContent)||5;
+  const solar=parseFloat(document.getElementById('v-solar').textContent)||3;
+  const solOn=document.getElementById('t-solar').classList.contains('on');
+  const lpg=parseInt(document.getElementById('v-lpg').textContent)||1;
+  const fuel=parseFloat(document.getElementById('v-fuel').textContent)||5;
+  const grocery=parseFloat(document.getElementById('v-grocery').value)||800;
+  const plants=parseInt(document.getElementById('v-plants').textContent)||2;
+  const fF={petrol:2.3,diesel:2.7,ev:0,cng:1.8};
+  const gF={food:0.005,mixed:0.007,high:0.01};
+  const pF={tree:0.1,outdoor:0.03,indoor:0.01};
+  const eCO2=elec*0.7,lCO2=(lpg*42)/30,tCO2=fuel*(fF[APP.fuel]||2.3),gCO2=grocery*(gF[APP.groceryCat]||0.005);
+  const emission=+(eCO2+lCO2+tCO2+gCO2).toFixed(2);
+  const reduction=solOn?+(solar*0.7).toFixed(2):0;
+  const offset=+(plants*(pF[APP.plantType]||0.1)).toFixed(2);
+  const net=+Math.max(0,emission-reduction-offset).toFixed(2);
+  const credits=+Math.max(0,APP.baseline-net).toFixed(2);
+  document.getElementById('r-e').textContent=emission;document.getElementById('r-r').textContent=reduction;
+  document.getElementById('r-o').textContent=offset;document.getElementById('r-n').textContent=net;
+  document.getElementById('r-formula').innerHTML=`<span style="color:var(--muted)">// IPCC method · House ${APP.houses[APP.currentHouse].id}</span><br>Net = (${eCO2.toFixed(2)}+${lCO2.toFixed(2)}+${tCO2.toFixed(2)}+${gCO2.toFixed(2)}) − ${reduction} − ${offset} = <span style="color:var(--lime)">${net} kg CO₂</span><br>Credits = Baseline(${APP.baseline}) − Net(${net}) = <span style="color:var(--emerald)">+${credits}</span>`;
+  document.getElementById('result-panel').style.display='block';
+  document.getElementById('result-panel').scrollIntoView({behavior:'smooth',block:'nearest'});
+  // ── SAVE TO FIRESTORE ──
+  const house = APP.houses[APP.currentHouse];
+  const today = new Date().toISOString().split('T')[0]; // "2026-03-31"
+  
+  db.collection('houses').doc(house.id)
+    .collection('daily_data').doc(today)
+    .set({
+      electricity_kwh: parseFloat(document.getElementById('v-elec').value || 0),
+      solar_kwh: parseFloat(document.getElementById('v-solar').value || 0),
+      lpg_cylinders: parseInt(document.getElementById('v-lpg').textContent || 0),
+      fuel_litres: parseFloat(document.getElementById('v-fuel').value || 0),
+      emission_kg: emission,
+      solar_reduction_kg: reduction,
+      net_carbon_kg: net,
+      credits_earned: credits,
+      updated_by: APP.phone,
+      updated_at: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true })
+    .then(() => toast('☁️', 'Data saved & syncing to all members!'))
+    .catch(err => console.error('Save failed:', err));
+
+}
+function saveToDash(){APP.balance+=1.2;document.getElementById('cr-bal').textContent=APP.balance.toFixed(1);document.getElementById('result-panel').style.display='none';toast('✅','Saved to Firebase! Dashboard updated.');goto('dashboard')}
+
+// ═══ CHARTS ═══
+let DC={},AC={};
+const baseOpts=()=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#152019',borderColor:'rgba(52,211,100,0.2)',borderWidth:1,titleColor:'#f0fdf4',bodyColor:'#86efac'}},scales:{x:{ticks:{color:'#4b7a57',font:{size:10}},grid:{color:'rgba(52,211,100,0.05)'},border:{color:'rgba(52,211,100,0.08)'}},y:{ticks:{color:'#4b7a57',font:{size:10}},grid:{color:'rgba(52,211,100,0.07)'},border:{color:'rgba(52,211,100,0.08)'}}}});
+function initDashCharts(){
+  ['trend','pie','spend'].forEach(k=>{if(DC[k])DC[k].destroy()});
+  const L=['16','17','18','19','20','21','22'];
+  DC.trend=new Chart(document.getElementById('c-trend').getContext('2d'),{type:'line',data:{labels:L,datasets:[{label:'Emission',data:[5.1,4.7,5.3,4.1,3.9,3.8,4.5],borderColor:'#f43f5e',backgroundColor:'rgba(244,63,94,0.05)',tension:.4,fill:true,pointRadius:3},{label:'Net',data:[4.0,3.6,4.2,3.0,2.8,2.7,3.3],borderColor:'#34d364',backgroundColor:'rgba(52,211,100,0.05)',tension:.4,fill:true,pointRadius:3},{label:'Baseline',data:[5,5,5,5,5,5,5],borderColor:'rgba(255,255,255,0.1)',borderDash:[4,4],pointRadius:0}]},options:{...baseOpts(),plugins:{...baseOpts().plugins,legend:{labels:{color:'#86efac',font:{size:10},boxWidth:10}}}}});
+  DC.pie=new Chart(document.getElementById('c-pie').getContext('2d'),{type:'doughnut',data:{labels:['Electricity','LPG','Transport','Scope 3'],datasets:[{data:[45,24,14,17],backgroundColor:['#fbbf24','#f97316','#38bdf8','#8b5cf6'],borderWidth:0,hoverOffset:5}]},options:{cutout:'60%',plugins:{legend:{position:'bottom',labels:{color:'#86efac',font:{size:10},boxWidth:8,padding:10}}}}});
+  DC.spend=new Chart(document.getElementById('c-spend').getContext('2d'),{type:'bar',data:{labels:['Jan','Feb','Mar'],datasets:[{label:'Food',data:[4200,3800,4500],backgroundColor:'rgba(139,92,246,0.7)',stack:'a'},{label:'Lifestyle',data:[2100,1500,3000],backgroundColor:'rgba(244,63,94,0.6)',stack:'a'}]},options:{...baseOpts(),plugins:{...baseOpts().plugins,legend:{labels:{color:'#86efac',font:{size:10},boxWidth:8}}}}});
+}
+function renderEmiList(){
+  const list=document.getElementById('emi-list');if(!list)return;
+  [{icon:'⚡',name:'Electricity',scope:'S2',col:'#fbbf24',bg:'rgba(251,191,36,0.12)',val:'2.5 kg',pct:45},{icon:'🔥',name:'LPG',scope:'S1',col:'#f97316',bg:'rgba(249,115,22,0.12)',val:'1.4 kg',pct:25},{icon:'🚗',name:'Transport',scope:'S1',col:'#38bdf8',bg:'rgba(56,189,248,0.12)',val:'0.8 kg',pct:14},{icon:'🛒',name:'Scope 3',scope:'S3',col:'#8b5cf6',bg:'rgba(139,92,246,0.12)',val:'1.0 kg',pct:18},{icon:'🌿',name:'Plant Offset',scope:'OFF',col:'#34d364',bg:'rgba(52,211,100,0.12)',val:'−0.3 kg',pct:5}].forEach(e=>{
+    const div=document.createElement('div');div.style.cssText='display:flex;align-items:center;gap:10px';
+    div.innerHTML=`<div style="width:34px;height:34px;border-radius:10px;background:${e.bg};display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">${e.icon}</div><div style="flex:1"><div style="font-size:12px;font-weight:600;margin-bottom:5px;display:flex;justify-content:space-between"><span>${e.name} <span class="scope-tag" style="font-size:9px;background:${e.bg};color:${e.col}">${e.scope}</span></span><span style="font-family:'Cabinet Grotesk',sans-serif;font-weight:800;color:${e.col}">${e.val}</span></div><div style="height:5px;background:var(--bg2);border-radius:3px;overflow:hidden"><div style="height:5px;width:${e.pct}%;background:${e.col};border-radius:3px;transition:width 1s"></div></div></div>`;
+    list.appendChild(div);
+  });
+}
+
+// ═══ LEDGER ═══
+function renderLedger(){
+  let bal=APP.balance;
+  document.getElementById('ledger-body').innerHTML=APP.ledger.map(r=>{const row=`<tr><td>${r.date}</td><td>${r.act}</td><td class="earned">${r.earned>0?'+'+r.earned.toFixed(1):'—'}</td><td class="used-val">${r.used>0?'-'+r.used.toFixed(1):'—'}</td><td style="font-family:'Cabinet Grotesk',sans-serif;font-weight:800">${bal.toFixed(1)}</td></tr>`;bal-=r.earned;bal+=r.used;return row}).join('');
+}
+
+// ═══ CREDITS ═══
+function openR(type,title){APP.redeemType=type;document.getElementById('m-title').textContent=title;document.getElementById('m-sub').textContent=`Balance: ${APP.balance.toFixed(1)} credits`;document.getElementById('m-amt').value='';document.getElementById('modal').classList.add('open')}
+function closeModal(){document.getElementById('modal').classList.remove('open')}
+function confirmRedeem(){const a=parseFloat(document.getElementById('m-amt').value);if(!a||a<=0){toast('⚠️','Enter valid amount');return}if(a>APP.balance){toast('❌','Insufficient credits');return}APP.balance-=a;APP.ledger.unshift({date:'Now',act:'Redeemed: '+APP.redeemType,earned:0,used:a});document.getElementById('cr-bal').textContent=APP.balance.toFixed(1);closeModal();renderLedger();toast('🎉','Redeemed '+a+' credits!')}
+
+// ═══ TOAST ═══
+function toast(icon,msg){const t=document.getElementById('toast');document.getElementById('t-icon').textContent=icon;document.getElementById('t-msg').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500)}
+
+// ═══ INIT ═══
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('phone-in').addEventListener('keydown',e=>{if(e.key==='Enter')sendOTP()});
+  updR('elec',5);updR('solar',3);updR('fuel',5);
+  updateFleetSummary();
+  // Seed vehicle rows
+  addVehicleRow();addVehicleRow();
+  // Live sensor sim
+  setInterval(()=>{if(APP.page==='dashboard'){const el=document.getElementById('kpi-e');if(el)el.textContent=(parseFloat(el.textContent)+((Math.random()-.5)*.12)).toFixed(1)}},9000);
+});
+</script>
+<script>
+// ── FIREBASE INIT ──
+const firebaseConfig = {
+  apiKey: "AIzaSyAZediVtmP_5ItE322KRZ6yMG86djn2uqY",
+  authDomain: "greencredit-2e75e.firebaseapp.com",
+  projectId: "greencredit-2e75e",
+  storageBucket: "greencredit-2e75e.firebasestorage.app",
+  messagingSenderId: "106774720475",
+  appId: "1:106774720475:web:58b6fe161b9883bc1481fe"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+console.log("✅ Firebase connected!");
+
+// ── REPLACE sendOTP() ──
+function sendOTP() {
+  const ph = document.getElementById('phone-in').value.trim();
+  if (ph.length < 10) { toast('⚠️', 'Enter valid number'); return; }
+
+  // Handle if user types with or without +91
+  const fullPhone = ph.startsWith('+91') ? ph : 
+                  ph.startsWith('91') ? '+' + ph : 
+                  '+91' + ph;
+  APP.phone = fullPhone;
+  document.getElementById('ph-disp').textContent = ph;
+
+  // Setup invisible recaptcha
+ try {
+  if (window.recaptchaVerifier) {
+    window.recaptchaVerifier.clear();
+    window.recaptchaVerifier = null;
+  }
+  } catch(e) {}
+  window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+    size: 'invisible'
+   });
+
+  auth.signInWithPhoneNumber(fullPhone, window.recaptchaVerifier)
+    .then(result => {
+      window.confirmationResult = result;
+      document.getElementById('phone-step').style.display = 'none';
+      document.getElementById('otp-step').style.display = 'block';
+      document.querySelectorAll('.otp-box')[0].focus();
+      toast('📱', 'OTP sent to ' + ph);
+    })
+    .catch(err => {
+      console.error(err);
+      toast('❌', 'Failed to send OTP. Try again.');
+      window.recaptchaVerifier = null;
+    });
+}
+
+// ── REPLACE verifyOTP() ──
+function verifyOTP() {
+  const otp = [...document.querySelectorAll('.otp-box')].map(b => b.value).join('');
+  if (otp.length < 6) { toast('⚠️', 'Enter 6-digit OTP'); return; }
+
+  window.confirmationResult.confirm(otp)
+    .then(async result => {
+      const phone = result.user.phoneNumber; // e.g. "+919150232577"
+
+      // Check Firestore if this user has a house
+      const userDoc = await db.collection('users').doc(phone).get();
+
+      if (userDoc.exists) {
+        // Existing user — load their house
+        const { house_id, name } = userDoc.data();
+        toast('🎉', 'Welcome back, ' + (name || 'there') + '!');
+        await loadUserHouse(house_id);
+      } else {
+        // New user — send to house registration
+        toast('👋', 'Welcome! Let\'s set up your house.');
+        showNewUserSetup(phone);
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      toast('❌', 'Wrong OTP. Try again.');
+    });
+}
+
+// ── LOAD EXISTING USER'S HOUSE ──
+async function loadUserHouse(houseId) {
+  const houseDoc = await db.collection('houses').doc(houseId).get();
+  if (houseDoc.exists) {
+    const data = houseDoc.data();
+    // Inject real house data into APP
+    APP.houses[0] = {
+      id: data.house_id,
+      city: data.address,
+      addr: data.address,
+      members: data.member_count,
+      credits: 24.6, // will update in Phase 2
+      netCarbon: 3.8,
+      memberList: []
+    };
+    APP.currentHouse = 0;
+  }
+  // Go to app
+  document.getElementById('page-login').classList.remove('active');
+  document.getElementById('page-app').classList.add('active');
+  loadHouse(0);
+  goto('dashboard');
+}
+
+// ── NEW USER SETUP ──
+function showNewUserSetup(phone) {
+  // Hide login, show a simple setup form
+  document.getElementById('page-login').classList.remove('active');
+  document.getElementById('page-app').classList.add('active');
+  goto('house'); // your existing house registration tab
+  APP.newUserPhone = phone;
+  toast('🏠', 'Please fill in your house details below');
+}
+</script>
+</body>
+</html>
