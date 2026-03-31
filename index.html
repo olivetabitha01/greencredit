@@ -1238,20 +1238,59 @@ function refreshGPS(){
 let memberCount=4,houseType='apt';
 function adjM(d){memberCount=Math.max(1,memberCount+d);document.getElementById('m-val').textContent=memberCount}
 function selHT(t){document.getElementById('ht-apt').classList.toggle('sel',t==='apt');document.getElementById('ht-ind').classList.toggle('sel',t==='ind');houseType=t}
-function registerHouse(){
-  const owner=document.getElementById('h-owner').value||'Owner';
-  const addr=document.getElementById('h-addr').value||'Address, City';
-  const city=document.getElementById('h-city').value;
-  const stateCode=city==='Bangalore'||city==='Mysore'?'KA':city==='Mumbai'||city==='Pune'?'MH':city==='Delhi'?'DL':city==='Hyderabad'?'TS':'TN';
-  const cityCode=city.slice(0,2).toUpperCase();
-  const newId=stateCode+'-'+cityCode+'-'+String(Math.floor(Math.random()*9000)+1000);
+async function registerHouse(){
+  const owner = document.getElementById('h-owner').value || 'Owner';
+  const addr = document.getElementById('h-addr').value || 'Address, City';
+  const city = document.getElementById('h-city').value;
+  const stateCode = city==='Bangalore'||city==='Mysore'?'KA':city==='Mumbai'||city==='Pune'?'MH':city==='Delhi'?'DL':city==='Hyderabad'?'TS':'TN';
+  const cityCode = city.slice(0,2).toUpperCase();
+  const newId = stateCode+'-'+cityCode+'-'+String(Math.floor(Math.random()*9000)+1000);
+
+  // Save to local APP as before
   APP.houses.push({id:newId,city,addr,members:memberCount,lat:13.08,lng:80.27,netCarbon:4.5,credits:0,
     memberList:[{name:owner,phone:APP.phone||'9876543210',role:'owner',relation:'Owner',status:'active',color:'#34d364'}]});
   document.getElementById('h-id-display').textContent=newId;
   document.getElementById('h-addr-display').textContent=addr+' · '+memberCount+' members';
   drawQR(document.getElementById('h-qr-wrap'),newId);
   renderHousePanel();
-  toast('🏡','House registered! ID: '+newId+' — Now go to Members tab to add family');
+
+  // ── SAVE TO FIREBASE ──
+  const phone = APP.phone || APP.newUserPhone;
+  
+  try {
+    // 1. Save house to Firestore
+    await db.collection('houses').doc(newId).set({
+      house_id: newId,
+      address: addr,
+      city: city,
+      owner_phone: phone,
+      member_count: memberCount,
+      member_phones: [phone],
+      house_type: houseType,
+      created_at: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    // 2. Save user → house mapping
+    await db.collection('users').doc(phone).set({
+      phone: phone,
+      name: owner,
+      house_id: newId,
+      role: 'owner',
+      status: 'active',
+      created_at: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    toast('🏡', 'House ' + newId + ' saved to Firebase! ✅');
+    
+    // 3. Switch to new house and load dashboard
+    APP.currentHouse = APP.houses.length - 1;
+    loadHouse(APP.currentHouse);
+    goto('dashboard');
+
+  } catch(err) {
+    console.error('Error saving house:', err);
+    toast('⚠️', 'House created locally — Firebase sync failed');
+  }
 }
 function drawQR(container,text){
   container.innerHTML='';const c=document.createElement('canvas');c.width=130;c.height=130;
