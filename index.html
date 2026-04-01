@@ -755,11 +755,11 @@ onValue(ref(rtdb,<span class="val">`gps/${houseId}`</span>),(snap)=>{<br>
         <div class="card">
           <div class="wt">🛒 Scope 3 Consumption</div>
           <div style="margin-top:10px">
-           <label for="bill-upload-input" style="border:2px dashed rgba(52,211,100,0.2);border-radius:14px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(52,211,100,0.02);margin-bottom:12px;display:block" id="upload-zone">
+            <label for="bill-upload-input" style="border:2px dashed rgba(52,211,100,0.2);border-radius:14px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(52,211,100,0.02);margin-bottom:12px;display:block" id="upload-zone">
               <div style="font-size:24px;margin-bottom:6px" id="uz-icon">📤</div>
-              <div style="font-size:13px;color:var(--text2);font-weight:600" id="uz-text">Upload bill / UPI screenshot</div>
-              <div style="font-size:11px;color:var(--muted);margin-top:3px">OCR auto-extraction · Food · Lifestyle</div>
-              <input type="file" id="bill-upload-input" accept="image/*,.pdf" style="display:none" onchange="ocrBillUpload(this.files[0])">
+              <div style="font-size:13px;color:var(--text2);font-weight:600" id="uz-text">📱 Tap to Upload Bill Photo</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:3px">Take photo or choose from gallery · OCR auto-reads values</div>
+              <input type="file" id="bill-upload-input" accept="image/*" style="display:none" onchange="ocrBillUpload(this.files[0])">
             </label>
             <input class="inp" type="number" placeholder="₹ Amount" id="v-grocery" value="800" style="margin-bottom:8px">
             <div style="display:flex;gap:6px">
@@ -1357,7 +1357,8 @@ function renderQRGrid(){
 }
 function autoFill(id){const qr=APP.qrCards.find(q=>q.id===id);if(!qr)return;const h=APP.houses[APP.currentHouse];const d={...qr.demo,house_id:h.id,timestamp:new Date().toISOString(),verified:true,source:'upi_auto'};showResult(qr.icon,qr.title,d);toast('🔄','Auto-filled: '+qr.title)}
 function simUpload(){
-  document.getElementById('bill-upload-input').click();
+  const inp = document.getElementById('bill-upload-input');
+  if(inp) inp.click();
 }
 
 function showResult(icon,title,data){
@@ -1366,11 +1367,30 @@ function showResult(icon,title,data){
 
 // ═══ SCANNER ═══
 function openScanner(id){
-  APP.currentScanCat=id;document.getElementById('scanner-modal').classList.add('open');
+  APP.currentScanCat=id;
+  document.getElementById('scanner-modal').classList.add('open');
   document.getElementById('scanner-status').textContent='Starting camera...';
   navigator.mediaDevices&&navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})
-    .then(s=>{APP.scannerStream=s;const v=document.getElementById('scanner-video');v.srcObject=s;v.play();document.getElementById('scanner-status').textContent='Align QR in frame';startQRScan()})
-    .catch(()=>{document.getElementById('scanner-status').textContent='Simulating scan...';setTimeout(()=>{closeScanner();autoFill(APP.currentScanCat);},2000)});
+    .then(s=>{
+      APP.scannerStream=s;
+      const v=document.getElementById('scanner-video');
+      v.srcObject=s;v.play();
+      document.getElementById('scanner-status').textContent='Point camera at QR code on bill';
+      document.getElementById('scanner-hint').textContent='Hold steady — auto-detects QR';
+      startQRScan();
+    })
+    .catch(()=>{
+      // Camera not available — show upload from image option
+      document.getElementById('scanner-status').textContent='Camera unavailable';
+      document.getElementById('scanner-hint').innerHTML=`
+        <div style="margin-top:16px">
+          <label for="qr-image-input" style="display:inline-block;padding:12px 24px;background:linear-gradient(135deg,#1e6b37,#34d364);border-radius:12px;color:#000;font-weight:900;cursor:pointer;font-size:14px">
+            📷 Scan QR from Photo
+            <input type="file" id="qr-image-input" accept="image/*" style="display:none" onchange="scanQRFromImage(this.files[0])">
+          </label>
+          <div style="margin-top:10px;font-size:12px;color:#4b7a57">Or click Auto-fill to use demo data</div>
+        </div>`;
+    });
 }
 function startQRScan(){const v=document.getElementById('scanner-video');const c=document.getElementById('scan-canvas');const ctx=c.getContext('2d');APP.scanInterval=setInterval(()=>{if(v.readyState===v.HAVE_ENOUGH_DATA){c.width=v.videoWidth;c.height=v.videoHeight;ctx.drawImage(v,0,0,c.width,c.height);try{const img=ctx.getImageData(0,0,c.width,c.height);const code=window.jsQR&&jsQR(img.data,img.width,img.height);if(code){
   closeScanner();
@@ -1384,6 +1404,30 @@ function startQRScan(){const v=document.getElementById('scanner-video');const c=
     toast('📷','QR Scanned!');
   }
 }}catch(e){}}},250)}
+function scanQRFromImage(file){
+  if(!file) return;
+  toast('🔍','Reading QR from image...');
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  img.onload = function(){
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img,0,0);
+    const imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
+    const code = window.jsQR && jsQR(imageData.data, imageData.width, imageData.height);
+    if(code){
+      closeScanner();
+      const handled = processQRData(code.data);
+      if(!handled) toast('📋','QR found: '+code.data.substring(0,60));
+    } else {
+      toast('⚠️','No QR found in image — try a clearer photo');
+    }
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+}
 function closeScanner(){document.getElementById('scanner-modal').classList.remove('open');if(APP.scannerStream){APP.scannerStream.getTracks().forEach(t=>t.stop());APP.scannerStream=null}if(APP.scanInterval){clearInterval(APP.scanInterval);APP.scanInterval=null}}
 document.getElementById('scanner-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeScanner()});
 
