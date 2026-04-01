@@ -1354,7 +1354,65 @@ function renderQRGrid(){
   setTimeout(()=>{APP.qrCards.forEach(qr=>{const c=document.getElementById('qrc-'+qr.id);if(c){const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,106,106);ctx.fillStyle=qr.color;for(let i=0;i<7;i++)for(let j=0;j<7;j++){if((i*7+j*3+(h.id+qr.id).charCodeAt((i+j)%(h.id.length+qr.id.length)))%3===0)ctx.fillRect(6+i*12,6+j*12,10,10)}[[0,0],[4,0],[0,4]].forEach(([x,y])=>{ctx.fillStyle=qr.color;ctx.fillRect(6+x*12,6+y*12,36,36);ctx.fillStyle='#fff';ctx.fillRect(10+x*12,10+y*12,28,28);ctx.fillStyle=qr.color;ctx.fillRect(14+x*12,14+y*12,20,20)})}})},60);
 }
 function autoFill(id){const qr=APP.qrCards.find(q=>q.id===id);if(!qr)return;const h=APP.houses[APP.currentHouse];const d={...qr.demo,house_id:h.id,timestamp:new Date().toISOString(),verified:true,source:'upi_auto'};showResult(qr.icon,qr.title,d);toast('🔄','Auto-filled: '+qr.title)}
-function simUpload2(id){toast('📤','Uploading & running OCR...');setTimeout(()=>autoFill(id),1400)}
+function simUpload(){
+  document.getElementById('bill-upload-input').click();
+}
+// ── PROCESS QR SCAN RESULT ──
+function processQRData(rawText) {
+  try {
+    const data = JSON.parse(rawText);
+    
+    if (data.category === 'electricity') {
+      // Auto fill electricity units
+      document.getElementById('r-elec').value = data.units || 0;
+      document.getElementById('v-elec').textContent = data.units || 0;
+      toast('⚡', `Bill scanned! ${data.units} kWh auto-filled → calculating...`);
+      setTimeout(() => { calcAll(); goto('track'); }, 500);
+    }
+
+    else if (data.category === 'lpg') {
+      // Auto fill LPG cylinders
+      document.getElementById('v-lpg').textContent = data.cylinders || 1;
+      toast('🔥', `LPG scanned! ${data.cylinders} cylinder(s) auto-filled → calculating...`);
+      setTimeout(() => { calcAll(); goto('track'); }, 500);
+    }
+
+    else if (data.category === 'transport') {
+      // Auto fill fuel
+      document.getElementById('r-fuel').value = data.litres || 0;
+      document.getElementById('v-fuel').textContent = data.litres || 0;
+      // Set fuel type
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        if (b.textContent.toLowerCase().includes(data.fuel || 'petrol'))
+          b.click();
+      });
+      toast('⛽', `Fuel scanned! ${data.litres}L ${data.fuel} auto-filled → calculating...`);
+      setTimeout(() => { calcAll(); goto('track'); }, 500);
+    }
+
+    else if (data.category === 'grocery') {
+      // Auto fill grocery amount
+      document.getElementById('v-grocery').value = data.amount_rs || 0;
+      toast('🛒', `Grocery scanned! Rs.${data.amount_rs} auto-filled → calculating...`);
+      setTimeout(() => { calcAll(); goto('track'); }, 500);
+    }
+
+    // Save scan to Firestore
+    const house = APP.houses[APP.currentHouse];
+    db.collection('houses').doc(house.id)
+      .collection('scans').add({
+        ...data,
+        scanned_by: APP.phone,
+        scanned_at: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+    return true;
+  } catch(e) {
+    // Not JSON — try OCR extraction
+    return false;
+  }
+}
+
 function showResult(icon,title,data){
   document.getElementById('scan-result').innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><span style="font-size:20px">${icon}</span><div style="font-family:'Cabinet Grotesk',sans-serif;font-size:14px;font-weight:800;color:var(--emerald)">${title} — Verified ✓</div><span class="badge bv" style="margin-left:auto">Linked: ${data.house_id}</span></div><div style="background:var(--bg);border-radius:9px;padding:12px;font-family:monospace;font-size:11px;line-height:2;color:var(--text2)">${Object.entries(data).map(([k,v])=>`<span style="color:var(--sky)">${k}</span>: <span style="color:var(--lime)">${JSON.stringify(v)}</span>`).join('<br>')}</div><div style="margin-top:8px;font-size:11px;color:var(--muted)">✅ Saved to Firebase → houses/${data.house_id}/transactions/</div>`;
 }
@@ -1367,7 +1425,18 @@ function openScanner(id){
     .then(s=>{APP.scannerStream=s;const v=document.getElementById('scanner-video');v.srcObject=s;v.play();document.getElementById('scanner-status').textContent='Align QR in frame';startQRScan()})
     .catch(()=>{document.getElementById('scanner-status').textContent='Simulating scan...';setTimeout(()=>{closeScanner();autoFill(APP.currentScanCat);},2000)});
 }
-function startQRScan(){const v=document.getElementById('scanner-video');const c=document.getElementById('scan-canvas');const ctx=c.getContext('2d');APP.scanInterval=setInterval(()=>{if(v.readyState===v.HAVE_ENOUGH_DATA){c.width=v.videoWidth;c.height=v.videoHeight;ctx.drawImage(v,0,0,c.width,c.height);try{const img=ctx.getImageData(0,0,c.width,c.height);const code=window.jsQR&&jsQR(img.data,img.width,img.height);if(code){closeScanner();let d;try{d=JSON.parse(code.data)}catch{d={raw:code.data}};d.house_id=APP.houses[APP.currentHouse].id;const qr=APP.qrCards.find(q=>q.id===APP.currentScanCat)||{icon:'📋',title:'Bill'};showResult(qr.icon,qr.title,{...d,timestamp:new Date().toISOString(),verified:true,source:'camera_scan'});toast('📷','QR Scanned!')}}catch(e){}}},250)}
+function startQRScan(){const v=document.getElementById('scanner-video');const c=document.getElementById('scan-canvas');const ctx=c.getContext('2d');APP.scanInterval=setInterval(()=>{if(v.readyState===v.HAVE_ENOUGH_DATA){c.width=v.videoWidth;c.height=v.videoHeight;ctx.drawImage(v,0,0,c.width,c.height);try{const img=ctx.getImageData(0,0,c.width,c.height);const code=window.jsQR&&jsQR(img.data,img.width,img.height);if(code){
+  closeScanner();
+  const handled = processQRData(code.data);
+  if(!handled){
+    let d;
+    try{d=JSON.parse(code.data)}catch{d={raw:code.data}};
+    d.house_id=APP.houses[APP.currentHouse].id;
+    const qr=APP.qrCards.find(q=>q.id===APP.currentScanCat)||{icon:'📋',title:'Bill'};
+    showResult(qr.icon,qr.title,{...d,timestamp:new Date().toISOString(),verified:true,source:'camera_scan'});
+    toast('📷','QR Scanned!');
+  }
+}}catch(e){}}},250)}
 function closeScanner(){document.getElementById('scanner-modal').classList.remove('open');if(APP.scannerStream){APP.scannerStream.getTracks().forEach(t=>t.stop());APP.scannerStream=null}if(APP.scanInterval){clearInterval(APP.scanInterval);APP.scanInterval=null}}
 document.getElementById('scanner-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeScanner()});
 
@@ -1376,7 +1445,6 @@ function updR(k,v){document.getElementById('v-'+k).textContent=v;const el=docume
 function adjS(k,d){const el=document.getElementById('v-'+k);let v=parseInt(el.textContent)+d;if(v<0)v=0;el.textContent=v}
 function selF(el,f){el.closest('div').querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');APP.fuel=f}
 function selCat(el,c){el.closest('div').querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');APP.groceryCat=c}
-function simUpload(){document.getElementById('uz-icon').textContent='⏳';document.getElementById('uz-text').textContent='OCR reading bill...';setTimeout(()=>{document.getElementById('uz-icon').textContent='✅';document.getElementById('uz-text').textContent='Extracted: Rice₹120 Dal₹90 Veg₹200 Milk₹80 = ₹490';toast('🛒','Bill extracted — linked to '+APP.houses[APP.currentHouse].id)},1500)}
 function capturePhoto(){const res=document.getElementById('photo-result');res.style.display='block';res.textContent='📷 Opening camera...';navigator.mediaDevices&&navigator.mediaDevices.getUserMedia({video:true}).then(s=>{s.getTracks().forEach(t=>t.stop());const h=APP.houses[APP.currentHouse];res.innerHTML=`✅ <strong style="color:var(--emerald)">Plant captured!</strong><br>📍 GPS: ${h.lat.toFixed(4)}°N, ${h.lng.toFixed(4)}°E · 🕐 ${new Date().toLocaleTimeString()}<br>🌳 Type: ${APP.plantType} · House: ${h.id} · Next verify: 7 days`;toast('📸','Plant GPS-tagged and verified')}).catch(()=>{const h=APP.houses[APP.currentHouse];res.innerHTML=`✅ <strong>Plant logged (demo)</strong><br>📍 GPS: ${h.lat.toFixed(4)}°N, ${h.lng.toFixed(4)}°E<br>🌳 Type: ${APP.plantType} · House: ${h.id}`;toast('📸','Plant captured!')})}
 function calcAll(){
   const elec=parseFloat(document.getElementById('v-elec').textContent)||5;
@@ -1584,5 +1652,7 @@ function showNewUserSetup(phone) {
   toast('🏠', 'Please fill in your house details below');
 }
 </script>
+<input type="file" id="bill-upload-input" accept="image/*,.pdf" 
+  style="display:none" onchange="ocrBillUpload(this.files[0])">
 </body>
 </html>
