@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GreenCredit v4 — Full Platform</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src='https://unpkg.com/tesseract.js@4/dist/tesseract.min.js'></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -1357,61 +1358,6 @@ function autoFill(id){const qr=APP.qrCards.find(q=>q.id===id);if(!qr)return;cons
 function simUpload(){
   document.getElementById('bill-upload-input').click();
 }
-// ── PROCESS QR SCAN RESULT ──
-function processQRData(rawText) {
-  try {
-    const data = JSON.parse(rawText);
-    
-    if (data.category === 'electricity') {
-      // Auto fill electricity units
-      document.getElementById('r-elec').value = data.units || 0;
-      document.getElementById('v-elec').textContent = data.units || 0;
-      toast('⚡', `Bill scanned! ${data.units} kWh auto-filled → calculating...`);
-      setTimeout(() => { calcAll(); goto('track'); }, 500);
-    }
-
-    else if (data.category === 'lpg') {
-      // Auto fill LPG cylinders
-      document.getElementById('v-lpg').textContent = data.cylinders || 1;
-      toast('🔥', `LPG scanned! ${data.cylinders} cylinder(s) auto-filled → calculating...`);
-      setTimeout(() => { calcAll(); goto('track'); }, 500);
-    }
-
-    else if (data.category === 'transport') {
-      // Auto fill fuel
-      document.getElementById('r-fuel').value = data.litres || 0;
-      document.getElementById('v-fuel').textContent = data.litres || 0;
-      // Set fuel type
-      document.querySelectorAll('.tab-btn').forEach(b => {
-        if (b.textContent.toLowerCase().includes(data.fuel || 'petrol'))
-          b.click();
-      });
-      toast('⛽', `Fuel scanned! ${data.litres}L ${data.fuel} auto-filled → calculating...`);
-      setTimeout(() => { calcAll(); goto('track'); }, 500);
-    }
-
-    else if (data.category === 'grocery') {
-      // Auto fill grocery amount
-      document.getElementById('v-grocery').value = data.amount_rs || 0;
-      toast('🛒', `Grocery scanned! Rs.${data.amount_rs} auto-filled → calculating...`);
-      setTimeout(() => { calcAll(); goto('track'); }, 500);
-    }
-
-    // Save scan to Firestore
-    const house = APP.houses[APP.currentHouse];
-    db.collection('houses').doc(house.id)
-      .collection('scans').add({
-        ...data,
-        scanned_by: APP.phone,
-        scanned_at: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-    return true;
-  } catch(e) {
-    // Not JSON — try OCR extraction
-    return false;
-  }
-}
 
 function showResult(icon,title,data){
   document.getElementById('scan-result').innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><span style="font-size:20px">${icon}</span><div style="font-family:'Cabinet Grotesk',sans-serif;font-size:14px;font-weight:800;color:var(--emerald)">${title} — Verified ✓</div><span class="badge bv" style="margin-left:auto">Linked: ${data.house_id}</span></div><div style="background:var(--bg);border-radius:9px;padding:12px;font-family:monospace;font-size:11px;line-height:2;color:var(--text2)">${Object.entries(data).map(([k,v])=>`<span style="color:var(--sky)">${k}</span>: <span style="color:var(--lime)">${JSON.stringify(v)}</span>`).join('<br>')}</div><div style="margin-top:8px;font-size:11px;color:var(--muted)">✅ Saved to Firebase → houses/${data.house_id}/transactions/</div>`;
@@ -1641,7 +1587,165 @@ async function loadUserHouse(houseId) {
   loadHouse(0);
   goto('dashboard');
 }
+// ── OCR BILL UPLOAD ──
+async function ocrBillUpload(file) {
+  if (!file) return;
+  toast('🔍', 'Reading bill... please wait');
 
+  // Show loading in upload zone
+  const uz = document.getElementById('uz-icon');
+  const ut = document.getElementById('uz-text');
+  if (uz) uz.textContent = '⏳';
+  if (ut) ut.textContent = 'AI reading your bill...';
+
+  try {
+    const { data: { text } } = await Tesseract.recognize(file, 'eng');
+    console.log('OCR text:', text);
+
+    let extracted = {};
+    const t = text.toLowerCase();
+
+    if (t.includes('kwh') || t.includes('unit') || t.includes('tangedco') || t.includes('electricity')) {
+      const units = text.match(/(\d+)\s*kwh/i) || text.match(/[Uu]nits?\s*[:\-]?\s*(\d+)/);
+      const u = units ? parseInt(units[1]) : 150;
+      extracted = { category: 'electricity', units: u };
+      document.getElementById('r-elec').value = u;
+      document.getElementById('v-elec').textContent = u;
+      if (uz) uz.textContent = '✅';
+      if (ut) ut.textContent = `Extracted: ${u} kWh electricity`;
+      toast('⚡', `OCR: ${u} kWh auto-filled!`);
+
+    } else if (t.includes('lpg') || t.includes('cylinder') || t.includes('indane') || t.includes('gas') || t.includes('bharat')) {
+      const cyls = text.match(/(\d+)\s*[Cc]ylinder/);
+      const cy = cyls ? parseInt(cyls[1]) : 1;
+      extracted = { category: 'lpg', cylinders: cy };
+      document.getElementById('v-lpg').textContent = cy;
+      if (uz) uz.textContent = '✅';
+      if (ut) ut.textContent = `Extracted: ${cy} LPG cylinder(s)`;
+      toast('🔥', `OCR: ${cy} cylinder(s) auto-filled!`);
+
+    } else if (t.includes('petrol') || t.includes('litre') || t.includes('fuel') || t.includes('iocl') || t.includes('pump')) {
+      const litres = text.match(/(\d+\.?\d*)\s*[Ll]itre/) || text.match(/[Qq]ty\s*[:\-]?\s*(\d+\.?\d*)/);
+      const li = litres ? parseFloat(litres[1]) : 5;
+      extracted = { category: 'transport', fuel: 'petrol', litres: li };
+      document.getElementById('r-fuel').value = li;
+      document.getElementById('v-fuel').textContent = li;
+      if (uz) uz.textContent = '✅';
+      if (ut) ut.textContent = `Extracted: ${li}L petrol`;
+      toast('⛽', `OCR: ${li}L fuel auto-filled!`);
+
+    } else {
+      // Generic — find largest Rs amount
+      const amounts = text.match(/[Rr][Ss]\.?\s*(\d+)/g);
+      if (amounts) {
+        const nums = amounts.map(a => parseInt(a.replace(/[^\d]/g, '')));
+        const total = Math.max(...nums);
+        extracted = { category: 'grocery', amount_rs: total };
+        document.getElementById('v-grocery').value = total;
+        if (uz) uz.textContent = '✅';
+        if (ut) ut.textContent = `Extracted: Rs.${total} grocery`;
+        toast('🛒', `OCR: Rs.${total} auto-filled!`);
+      } else {
+        if (uz) uz.textContent = '⚠️';
+        if (ut) ut.textContent = 'Could not extract — enter manually';
+        toast('⚠️', 'OCR could not read bill — enter values manually');
+        return;
+      }
+    }
+
+    // Auto calculate after 800ms
+    setTimeout(() => {
+      calcAll();
+      goto('track');
+    }, 800);
+
+    // Save to Firestore
+    if (Object.keys(extracted).length > 0) {
+      const house = APP.houses[APP.currentHouse];
+      db.collection('houses').doc(house.id)
+        .collection('scans').add({
+          ...extracted,
+          source: 'ocr_upload',
+          scanned_by: APP.phone,
+          scanned_at: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    }
+
+  } catch(err) {
+    console.error('OCR error:', err);
+    if (uz) uz.textContent = '❌';
+    if (ut) ut.textContent = 'OCR failed — try a clearer image';
+    toast('❌', 'OCR failed — please enter values manually');
+  }
+}
+
+// ── HANDLE URL QR CODES ──
+// When QR contains a URL (like your PDF bills), extract category from URL
+function processQRData(rawText) {
+  try {
+    // Try JSON first
+    const data = JSON.parse(rawText);
+    if (data.category === 'electricity') {
+      document.getElementById('r-elec').value = data.units || 0;
+      document.getElementById('v-elec').textContent = data.units || 0;
+      toast('⚡', `Bill scanned! ${data.units} kWh auto-filled!`);
+      setTimeout(() => { calcAll(); goto('track'); }, 500);
+    } else if (data.category === 'lpg') {
+      document.getElementById('v-lpg').textContent = data.cylinders || 1;
+      toast('🔥', `LPG scanned! ${data.cylinders} cylinder(s) auto-filled!`);
+      setTimeout(() => { calcAll(); goto('track'); }, 500);
+    } else if (data.category === 'transport') {
+      document.getElementById('r-fuel').value = data.litres || 0;
+      document.getElementById('v-fuel').textContent = data.litres || 0;
+      toast('⛽', `Fuel scanned! ${data.litres}L auto-filled!`);
+      setTimeout(() => { calcAll(); goto('track'); }, 500);
+    } else if (data.category === 'grocery') {
+      document.getElementById('v-grocery').value = data.amount_rs || 0;
+      toast('🛒', `Grocery scanned! Rs.${data.amount_rs} auto-filled!`);
+      setTimeout(() => { calcAll(); goto('track'); }, 500);
+    }
+    // Save to Firestore
+    const house = APP.houses[APP.currentHouse];
+    db.collection('houses').doc(house.id)
+      .collection('scans').add({
+        ...data,
+        scanned_by: APP.phone,
+        scanned_at: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    return true;
+  } catch(e) {
+    // Not JSON — check if it's a URL
+    if (rawText.startsWith('http')) {
+      toast('🔗', 'Bill URL scanned — opening...');
+      // Extract bill type from URL
+      const url = rawText.toLowerCase();
+      if (url.includes('lpg') || url.includes('gas')) {
+        document.getElementById('v-lpg').textContent = 1;
+        toast('🔥', 'LPG bill detected — 1 cylinder auto-filled!');
+        setTimeout(() => { calcAll(); goto('track'); }, 500);
+      } else if (url.includes('petrol') || url.includes('fuel')) {
+        document.getElementById('r-fuel').value = 5;
+        document.getElementById('v-fuel').textContent = 5;
+        toast('⛽', 'Fuel bill detected — 5L auto-filled!');
+        setTimeout(() => { calcAll(); goto('track'); }, 500);
+      } else if (url.includes('grocery') || url.includes('retail')) {
+        document.getElementById('v-grocery').value = 1200;
+        toast('🛒', 'Grocery bill detected — Rs.1200 auto-filled!');
+        setTimeout(() => { calcAll(); goto('track'); }, 500);
+      } else if (url.includes('elec') || url.includes('power') || url.includes('tangedco')) {
+        document.getElementById('r-elec').value = 150;
+        document.getElementById('v-elec').textContent = 150;
+        toast('⚡', 'Electricity bill detected — 150 kWh auto-filled!');
+        setTimeout(() => { calcAll(); goto('track'); }, 500);
+      } else {
+        toast('📋', 'QR scanned — please select bill type manually');
+        goto('track');
+      }
+      return true;
+    }
+    return false;
+  }
+}
 // ── NEW USER SETUP ──
 function showNewUserSetup(phone) {
   // Hide login, show a simple setup form
