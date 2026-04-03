@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GreenCredit v4 — Full Platform</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src='https://unpkg.com/tesseract.js@4/dist/tesseract.min.js'></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -1725,92 +1724,104 @@ async function ocrBillUpload(file) {
   const ut=document.getElementById('uz-text');
   const sr=document.getElementById('scan-result');
   if(uz) uz.textContent='⏳';
-  if(ut) ut.textContent='Reading bill... (10–30 sec)';
-  if(sr) sr.innerHTML='<span style="color:var(--amber)">⏳ OCR running — reading your bill text...<br>This takes 10–30 seconds on mobile. Please wait.</span>';
-  toast('🔍', 'OCR started — please wait up to 30 seconds');
+  if(ut) ut.textContent='Reading bill with AI...';
+  if(sr) sr.innerHTML='<span style="color:var(--amber)">⏳ AI reading your bill... (2-3 sec)</span>';
+  toast('🔍', 'AI reading bill...');
 
   try {
-    const { data: { text } } = await Tesseract.recognize(file, 'eng');
-    console.log('OCR text:', text);
+    // Convert image to base64
+    const base64 = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.readAsDataURL(file);
+    });
 
-    let extracted = {};
-    const t = text.toLowerCase();
+    // Detect media type
+    const mediaType = file.type || 'image/jpeg';
 
-    if (t.includes('kwh') || t.includes('unit') || t.includes('tangedco') || t.includes('electricity')) {
-      const units = text.match(/(\d+)\s*kwh/i) || text.match(/[Uu]nits?\s*[:\-]?\s*(\d+)/);
-      const u = units ? parseInt(units[1]) : 150;
-      extracted = { category: 'electricity', units: u };
-      document.getElementById('r-elec').value = u;
-      document.getElementById('v-elec').textContent = u;
-      if (uz) uz.textContent = '✅';
-      if (ut) ut.textContent = `Extracted: ${u} kWh electricity`;
-      toast('⚡', `OCR: ${u} kWh auto-filled!`);
+    // Call Claude API
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: mediaType, data: base64 }
+            },
+            {
+              type: 'text',
+              text: `Look at this bill/receipt. Extract the key data and return ONLY a JSON object, nothing else. 
+Use one of these formats depending on bill type:
+- Electricity bill: {"category":"electricity","units":150,"amount_rs":890}
+- LPG/Gas bill: {"category":"lpg","cylinders":1,"amount_rs":903}
+- Fuel/Petrol receipt: {"category":"transport","fuel":"petrol","litres":5,"amount_rs":512}
+- Grocery/shopping: {"category":"grocery","amount_rs":1200,"items":"list key items"}
+- If unclear: {"category":"grocery","amount_rs":500}
+Return ONLY the JSON, no explanation.`
+            }
+          ]
+        }]
+      })
+    });
 
-    } else if (t.includes('lpg') || t.includes('cylinder') || t.includes('indane') || t.includes('gas') || t.includes('bharat')) {
-      const cyls = text.match(/(\d+)\s*[Cc]ylinder/);
-      const cy = cyls ? parseInt(cyls[1]) : 1;
-      extracted = { category: 'lpg', cylinders: cy };
-      document.getElementById('v-lpg').textContent = cy;
-      if (uz) uz.textContent = '✅';
-      if (ut) ut.textContent = `Extracted: ${cy} LPG cylinder(s)`;
-      toast('🔥', `OCR: ${cy} cylinder(s) auto-filled!`);
+    const data = await response.json();
+    const text = data.content?.[0]?.text?.trim();
+    if (!text) throw new Error('No response');
 
-    } else if (t.includes('petrol') || t.includes('litre') || t.includes('fuel') || t.includes('iocl') || t.includes('pump')) {
-      const litres = text.match(/(\d+\.?\d*)\s*[Ll]itre/) || text.match(/[Qq]ty\s*[:\-]?\s*(\d+\.?\d*)/);
-      const li = litres ? parseFloat(litres[1]) : 5;
-      extracted = { category: 'transport', fuel: 'petrol', litres: li };
-      document.getElementById('r-fuel').value = li;
-      document.getElementById('v-fuel').textContent = li;
-      if (uz) uz.textContent = '✅';
-      if (ut) ut.textContent = `Extracted: ${li}L petrol`;
-      toast('⛽', `OCR: ${li}L fuel auto-filled!`);
+    const extracted = JSON.parse(text.replace(/```json|```/g, '').trim());
 
+    // Show result
+    if(sr) sr.innerHTML=`<span style="color:var(--emerald)">✅ Bill read by AI!</span><br>
+      <strong>Type:</strong> ${extracted.category}<br>
+      <strong>Data:</strong> ${JSON.stringify(extracted)}<br>
+      <span style="color:var(--muted)">Auto-filling Track tab...</span>`;
+
+    // Auto-fill the form
+    if(extracted.category === 'electricity') {
+      document.getElementById('r-elec').value = extracted.units || 0;
+      document.getElementById('v-elec').textContent = extracted.units || 0;
+      if(uz) uz.textContent='✅';
+      if(ut) ut.textContent=`${extracted.units} kWh extracted`;
+      toast('⚡', `AI: ${extracted.units} kWh auto-filled!`);
+    } else if(extracted.category === 'lpg') {
+      document.getElementById('v-lpg').textContent = extracted.cylinders || 1;
+      if(uz) uz.textContent='✅';
+      if(ut) ut.textContent=`${extracted.cylinders} cylinder(s) extracted`;
+      toast('🔥', `AI: ${extracted.cylinders} cylinder(s) auto-filled!`);
+    } else if(extracted.category === 'transport') {
+      document.getElementById('r-fuel').value = extracted.litres || 0;
+      document.getElementById('v-fuel').textContent = extracted.litres || 0;
+      if(uz) uz.textContent='✅';
+      if(ut) ut.textContent=`${extracted.litres}L ${extracted.fuel} extracted`;
+      toast('⛽', `AI: ${extracted.litres}L auto-filled!`);
     } else {
-      // Generic — find largest Rs amount
-      const amounts = text.match(/[Rr][Ss]\.?\s*(\d+)/g);
-      if (amounts) {
-        const nums = amounts.map(a => parseInt(a.replace(/[^\d]/g, '')));
-        const total = Math.max(...nums);
-        extracted = { category: 'grocery', amount_rs: total };
-        document.getElementById('v-grocery').value = total;
-        if (uz) uz.textContent = '✅';
-        if (ut) ut.textContent = `Extracted: Rs.${total} grocery`;
-        toast('🛒', `OCR: Rs.${total} auto-filled!`);
-      } else {
-        if (uz) uz.textContent = '⚠️';
-        if (ut) ut.textContent = 'Could not extract — enter manually';
-        toast('⚠️', 'OCR could not read bill — enter values manually');
-        return;
-      }
+      document.getElementById('v-grocery').value = extracted.amount_rs || 0;
+      if(uz) uz.textContent='✅';
+      if(ut) ut.textContent=`Rs.${extracted.amount_rs} extracted`;
+      toast('🛒', `AI: Rs.${extracted.amount_rs} auto-filled!`);
     }
 
-    // Auto calculate after 800ms
-    setTimeout(() => {
-      calcAll();
-      goto('track');
-    }, 800);
+    setTimeout(() => { calcAll(); goto('track'); }, 800);
 
-    // Save to Firestore
-    if (Object.keys(extracted).length > 0) {
-      const house = APP.houses[APP.currentHouse];
-      db.collection('houses').doc(house.id)
-        .collection('scans').add({
-          ...extracted,
-          source: 'ocr_upload',
-          scanned_by: APP.phone,
-          scanned_at: firebase.firestore.FieldValue.serverTimestamp()
-        });
-    }
+    // Save scan to Firestore
+    const house = APP.houses[APP.currentHouse];
+    db.collection('houses').doc(house.id).collection('scans').add({
+      ...extracted, source:'ai_vision',
+      scanned_by: APP.phone,
+      scanned_at: firebase.firestore.FieldValue.serverTimestamp()
+    });
 
   } catch(err) {
-    console.error('OCR error:', err);
-    const uz2=document.getElementById('uz-icon');
-    const ut2=document.getElementById('uz-text');
-    const sr2=document.getElementById('scan-result');
-    if(uz2) uz2.textContent='❌';
-    if(ut2) ut2.textContent='OCR failed — try a clearer image';
-    if(sr2) sr2.innerHTML=`<span style="color:var(--rose)">❌ OCR failed</span><br>Try a clearer, well-lit photo. Or enter values manually in the Track tab.`;
-    toast('❌', 'OCR failed — please enter values manually');
+    console.error('AI bill read error:', err);
+    if(uz) uz.textContent='❌';
+    if(ut) ut.textContent='Could not read — enter manually';
+    if(sr) sr.innerHTML=`<span style="color:var(--rose)">❌ Could not read bill</span><br>Please enter values manually in Track tab.`;
+    toast('❌', 'Could not read bill — enter manually');
   }
 }
 
