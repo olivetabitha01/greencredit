@@ -755,11 +755,11 @@ onValue(ref(rtdb,<span class="val">`gps/${houseId}`</span>),(snap)=>{<br>
         <div class="card">
           <div class="wt">🛒 Scope 3 Consumption</div>
           <div style="margin-top:10px">
-            <div style="border:2px dashed rgba(52,211,100,0.2);border-radius:14px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(52,211,100,0.02);margin-bottom:12px;position:relative;overflow:hidden" id="upload-zone">
+            <div style="border:2px dashed rgba(52,211,100,0.2);border-radius:14px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(52,211,100,0.02);margin-bottom:12px;position:relative;overflow:visible" id="upload-zone"></div>v style="border:2px dashed rgba(52,211,100,0.2);border-radius:14px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(52,211,100,0.02);margin-bottom:12px;position:relative;overflow:hidden" id="upload-zone">
               <div style="font-size:24px;margin-bottom:6px" id="uz-icon">📤</div>
               <div style="font-size:13px;color:var(--text2);font-weight:600" id="uz-text">📱 Tap to Upload Bill Photo</div>
               <div style="font-size:11px;color:var(--muted);margin-top:3px">Take photo or choose from gallery</div>
-              <input type="file" id="bill-upload-input" accept="image/*" onchange="ocrBillUpload(this.files[0])" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:100px">
+              <input type="file" id="bill-upload-input" accept="image/*" capture="environment" onchange="ocrBillUpload(this.files[0])" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:10">
             </div>
             <input class="inp" type="number" placeholder="₹ Amount" id="v-grocery" value="800" style="margin-bottom:8px">
             <div style="display:flex;gap:6px">
@@ -1736,6 +1736,7 @@ function processQRData(rawText) {
   try {
     // Try JSON first
     const data = JSON.parse(rawText);
+    document.getElementById('scan-result').innerHTML = `<span style="color:var(--emerald)">✅ QR Scanned!</span><br>Category: <strong>${data.category}</strong><br>Data auto-filled → check Track tab`;
     if (data.category === 'electricity') {
       document.getElementById('r-elec').value = data.units || 0;
       document.getElementById('v-elec').textContent = data.units || 0;
@@ -1768,6 +1769,7 @@ function processQRData(rawText) {
     // Not JSON — check if it's a URL
     if (rawText.startsWith('http')) {
       toast('🔗', 'Bill URL scanned — opening...');
+      document.getElementById('scan-result').innerHTML = `<span style="color:var(--emerald)">✅ QR Scanned!</span><br>URL: ${rawText.substring(0,80)}...`;
       // Extract bill type from URL
       const url = rawText.toLowerCase();
       if (url.includes('lpg') || url.includes('gas')) {
