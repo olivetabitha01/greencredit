@@ -970,7 +970,7 @@ onValue(ref(rtdb,<span class="val">`gps/${houseId}`</span>),(snap)=>{<br>
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center">
     <div style="position:relative;overflow:hidden;display:inline-block">
       <button style="padding:11px 20px;background:linear-gradient(135deg,#1e6b37,#34d364);border:none;border-radius:11px;color:#000;font-weight:900;cursor:pointer;font-size:13px">📁 Upload QR Photo</button>
-      <input type="file" accept="image/*" onchange="scanQRFromImage(this.files[0]);closeScanner();" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:100px">
+      <input type="file" accept="image/*,application/pdf" onchange="scanQRFromImage(this.files[0]);closeScanner();" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:100px">
     </div>
     <button onclick="closeScanner()" style="padding:11px 20px;background:none;border:1px solid var(--border);border-radius:11px;color:var(--muted);cursor:pointer;font-size:13px">✕ Cancel</button>
   </div>
@@ -1737,12 +1737,23 @@ async function ocrBillUpload(file) {
     });
 
     // Detect media type
-    const mediaType = file.type || 'image/jpeg';
+    // PDFs need special handling - can't send as image
+    if (file.type === 'application/pdf') {
+      if(sr) sr.innerHTML = '<span style="color:var(--rose)">⚠️ PDF detected — please screenshot the bill and upload as image instead</span>';
+      if(uz) uz.textContent = '⚠️';
+      if(ut) ut.textContent = 'Use image instead of PDF';
+      toast('⚠️', 'Please upload a photo/screenshot of the bill, not PDF');
+      return;
+    }
+    const mediaType = (file.type && file.type.startsWith('image/')) ? file.type : 'image/jpeg';
 
     // Call Claude API
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 300,
@@ -1818,6 +1829,8 @@ Return ONLY the JSON, no explanation.`
 
   } catch(err) {
     console.error('AI bill read error:', err);
+    console.error('Error details:', JSON.stringify(err));
+    if(sr) sr.innerHTML = `<span style="color:var(--rose)">❌ Error: ${err.message}</span><br>Check browser console for details.`;
     if(uz) uz.textContent='❌';
     if(ut) ut.textContent='Could not read — enter manually';
     if(sr) sr.innerHTML=`<span style="color:var(--rose)">❌ Could not read bill</span><br>Please enter values manually in Track tab.`;
