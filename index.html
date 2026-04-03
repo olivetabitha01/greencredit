@@ -10,6 +10,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
+<script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Satoshi:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -755,11 +756,11 @@ onValue(ref(rtdb,<span class="val">`gps/${houseId}`</span>),(snap)=>{<br>
         <div class="card">
           <div class="wt">🛒 Scope 3 Consumption</div>
           <div style="margin-top:10px">
-            <div style="border:2px dashed rgba(52,211,100,0.2);border-radius:14px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(52,211,100,0.02);margin-bottom:12px;position:relative;overflow:visible" id="upload-zone"></div>v style="border:2px dashed rgba(52,211,100,0.2);border-radius:14px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(52,211,100,0.02);margin-bottom:12px;position:relative;overflow:hidden" id="upload-zone">
+            <div style="border:2px dashed rgba(52,211,100,0.2);border-radius:14px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(52,211,100,0.02);margin-bottom:12px;position:relative;overflow:visible" id="upload-zone">
               <div style="font-size:24px;margin-bottom:6px" id="uz-icon">📤</div>
               <div style="font-size:13px;color:var(--text2);font-weight:600" id="uz-text">📱 Tap to Upload Bill Photo</div>
               <div style="font-size:11px;color:var(--muted);margin-top:3px">Take photo or choose from gallery</div>
-              <input type="file" id="bill-upload-input" accept="image/*" capture="environment" onchange="ocrBillUpload(this.files[0])" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:10">
+              <input type="file" id="bill-upload-input" accept="image/*" onchange="ocrBillUpload(this.files[0])" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:10">
             </div>
             <input class="inp" type="number" placeholder="₹ Amount" id="v-grocery" value="800" style="margin-bottom:8px">
             <div style="display:flex;gap:6px">
@@ -1398,41 +1399,120 @@ function openScanner(id){
         </div>`;
     });
 }
-function startQRScan(){const v=document.getElementById('scanner-video');const c=document.getElementById('scan-canvas');const ctx=c.getContext('2d');APP.scanInterval=setInterval(()=>{if(v.readyState===v.HAVE_ENOUGH_DATA){c.width=v.videoWidth;c.height=v.videoHeight;ctx.drawImage(v,0,0,c.width,c.height);try{const img=ctx.getImageData(0,0,c.width,c.height);const code=window.jsQR&&jsQR(img.data,img.width,img.height);if(code){
-  closeScanner();
-  const handled = processQRData(code.data);
-  if(!handled){
-    let d;
-    try{d=JSON.parse(code.data)}catch{d={raw:code.data}};
-    d.house_id=APP.houses[APP.currentHouse].id;
-    const qr=APP.qrCards.find(q=>q.id===APP.currentScanCat)||{icon:'📋',title:'Bill'};
-    showResult(qr.icon,qr.title,{...d,timestamp:new Date().toISOString(),verified:true,source:'camera_scan'});
-    toast('📷','QR Scanned!');
+function startQRScan(){
+  const v=document.getElementById('scanner-video');
+  const c=document.getElementById('scan-canvas');
+  const ctx=c.getContext('2d');
+
+  // Try ZXing first (supports QR + barcodes)
+  if(window.ZXing){
+    try{
+      const hints = new Map();
+      const formats = [
+        ZXing.BarcodeFormat.QR_CODE,
+        ZXing.BarcodeFormat.EAN_13,
+        ZXing.BarcodeFormat.EAN_8,
+        ZXing.BarcodeFormat.CODE_128,
+        ZXing.BarcodeFormat.CODE_39,
+        ZXing.BarcodeFormat.UPC_A,
+        ZXing.BarcodeFormat.DATA_MATRIX
+      ];
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+      const reader = new ZXing.MultiFormatReader();
+      reader.setHints(hints);
+      APP.scanInterval = setInterval(()=>{
+        if(v.readyState===v.HAVE_ENOUGH_DATA){
+          c.width=v.videoWidth; c.height=v.videoHeight;
+          ctx.drawImage(v,0,0,c.width,c.height);
+          try{
+            const img=ctx.getImageData(0,0,c.width,c.height);
+            const luminance=new ZXing.RGBLuminanceSource(img.data,c.width,c.height);
+            const binary=new ZXing.HybridBinarizer(luminance);
+            const result=reader.decode(new ZXing.BinaryBitmap(binary));
+            if(result){
+              closeScanner();
+              document.getElementById('scanner-status').textContent='✅ Scanned!';
+              const handled=processQRData(result.getText());
+              if(!handled) toast('📋','Scanned: '+result.getText().substring(0,50));
+            }
+          }catch(e){}
+        }
+      },300);
+      return;
+    }catch(e){}
   }
-}}catch(e){}}},250)}
+
+  // Fallback: jsQR (QR only)
+  APP.scanInterval=setInterval(()=>{
+    if(v.readyState===v.HAVE_ENOUGH_DATA){
+      c.width=v.videoWidth; c.height=v.videoHeight;
+      ctx.drawImage(v,0,0,c.width,c.height);
+      try{
+        const img=ctx.getImageData(0,0,c.width,c.height);
+        const code=window.jsQR&&jsQR(img.data,img.width,img.height);
+        if(code){
+          closeScanner();
+          const handled=processQRData(code.data);
+          if(!handled) toast('📷','QR Scanned: '+code.data.substring(0,50));
+        }
+      }catch(e){}
+    }
+  },250);
+}
 function scanQRFromImage(file){
   if(!file) return;
-  toast('🔍','Reading QR from image...');
-  const img = new Image();
-  const url = URL.createObjectURL(file);
-  img.onload = function(){
-    const canvas = document.createElement('canvas');
-    canvas.width = img.width;
-    canvas.height = img.height;
-    const ctx = canvas.getContext('2d');
+  toast('🔍','Reading image...');
+  const img=new Image();
+  const url=URL.createObjectURL(file);
+  img.onload=function(){
+    const canvas=document.createElement('canvas');
+    canvas.width=img.width; canvas.height=img.height;
+    const ctx=canvas.getContext('2d');
     ctx.drawImage(img,0,0);
-    const imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
-    const code = window.jsQR && jsQR(imageData.data, imageData.width, imageData.height);
+    const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
+
+    // Try jsQR first
+    let found=false;
+    const code=window.jsQR&&jsQR(imageData.data,imageData.width,imageData.height);
     if(code){
-      closeScanner();
-      const handled = processQRData(code.data);
+      found=true;
+      document.getElementById('scan-result').innerHTML=`<span style="color:var(--emerald)">✅ QR detected!</span><br>${code.data.substring(0,100)}`;
+      const handled=processQRData(code.data);
       if(!handled) toast('📋','QR found: '+code.data.substring(0,60));
-    } else {
-      toast('⚠️','No QR found in image — try a clearer photo');
     }
+
+    // Try ZXing (barcode support)
+    if(!found && window.ZXing){
+      try{
+        const hints=new Map();
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[
+          ZXing.BarcodeFormat.QR_CODE,ZXing.BarcodeFormat.EAN_13,
+          ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.UPC_A
+        ]);
+        const reader=new ZXing.MultiFormatReader();
+        reader.setHints(hints);
+        const luminance=new ZXing.RGBLuminanceSource(imageData.data,canvas.width,canvas.height);
+        const binary=new ZXing.HybridBinarizer(luminance);
+        const result=reader.decode(new ZXing.BinaryBitmap(binary));
+        if(result){
+          found=true;
+          document.getElementById('scan-result').innerHTML=`<span style="color:var(--emerald)">✅ Barcode detected!</span><br>${result.getText().substring(0,100)}`;
+          const handled=processQRData(result.getText());
+          if(!handled) toast('📷','Barcode: '+result.getText().substring(0,50));
+        }
+      }catch(e){}
+    }
+
+    // No QR/barcode found — run OCR on the whole image (treat as bill photo)
+    if(!found){
+      toast('🔍','No QR found — reading bill text with OCR...');
+      document.getElementById('scan-result').innerHTML=`<span style="color:var(--amber)">⏳ No QR detected — running OCR on bill...</span>`;
+      ocrBillUpload(file);
+    }
+
     URL.revokeObjectURL(url);
   };
-  img.src = url;
+  img.src=url;
 }
 function closeScanner(){document.getElementById('scanner-modal').classList.remove('open');if(APP.scannerStream){APP.scannerStream.getTracks().forEach(t=>t.stop());APP.scannerStream=null}if(APP.scanInterval){clearInterval(APP.scanInterval);APP.scanInterval=null}}
 document.getElementById('scanner-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeScanner()});
@@ -1641,13 +1721,13 @@ async function loadUserHouse(houseId) {
 // ── OCR BILL UPLOAD ──
 async function ocrBillUpload(file) {
   if (!file) return;
-  toast('🔍', 'Reading bill... please wait');
-
-  // Show loading in upload zone
-  const uz = document.getElementById('uz-icon');
-  const ut = document.getElementById('uz-text');
-  if (uz) uz.textContent = '⏳';
-  if (ut) ut.textContent = 'AI reading your bill...';
+  const uz=document.getElementById('uz-icon');
+  const ut=document.getElementById('uz-text');
+  const sr=document.getElementById('scan-result');
+  if(uz) uz.textContent='⏳';
+  if(ut) ut.textContent='Reading bill... (10–30 sec)';
+  if(sr) sr.innerHTML='<span style="color:var(--amber)">⏳ OCR running — reading your bill text...<br>This takes 10–30 seconds on mobile. Please wait.</span>';
+  toast('🔍', 'OCR started — please wait up to 30 seconds');
 
   try {
     const { data: { text } } = await Tesseract.recognize(file, 'eng');
@@ -1724,8 +1804,12 @@ async function ocrBillUpload(file) {
 
   } catch(err) {
     console.error('OCR error:', err);
-    if (uz) uz.textContent = '❌';
-    if (ut) ut.textContent = 'OCR failed — try a clearer image';
+    const uz2=document.getElementById('uz-icon');
+    const ut2=document.getElementById('uz-text');
+    const sr2=document.getElementById('scan-result');
+    if(uz2) uz2.textContent='❌';
+    if(ut2) ut2.textContent='OCR failed — try a clearer image';
+    if(sr2) sr2.innerHTML=`<span style="color:var(--rose)">❌ OCR failed</span><br>Try a clearer, well-lit photo. Or enter values manually in the Track tab.`;
     toast('❌', 'OCR failed — please enter values manually');
   }
 }
