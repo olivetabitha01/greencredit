@@ -19,6 +19,17 @@
   --amber:#fbbf24;--orange:#f97316;--rose:#f43f5e;--violet:#8b5cf6;--sky:#38bdf8;
   --text:#f0fdf4;--text2:#86efac;--muted:#4b7a57;
 }
+body.light-mode{
+  --bg:#f0fdf4;--bg2:#dcfce7;--bg3:#bbf7d0;--card:#ffffff;--card2:#f0fdf4;
+  --border:rgba(21,128,61,0.18);--border2:rgba(21,128,61,0.32);
+  --emerald:#16a34a;--lime:#65a30d;--teal:#0d9488;--cyan:#0891b2;
+  --amber:#d97706;--orange:#ea580c;--rose:#e11d48;--violet:#7c3aed;--sky:#0284c7;
+  --text:#14532d;--text2:#166534;--muted:#4b7a57;
+}
+body.light-mode .kpi,.light-mode .card{box-shadow:0 2px 12px rgba(0,0,0,0.06)}
+body.light-mode nav{background:rgba(240,253,244,0.95);border-bottom:1px solid var(--border)}
+body.light-mode .login-card{background:rgba(255,255,255,0.97)}
+body.light-mode .scanner-modal{background:#f0fdf4}
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Satoshi',sans-serif;overflow-x:hidden}
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--emerald);border-radius:2px}
@@ -317,9 +328,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
       <button class="nav-tab" data-p="track" onclick="goto('track')">⚡ Track</button>
       <button class="nav-tab" data-p="qrcodes" onclick="goto('qrcodes')">📱 QR & Scan</button>
       <button class="nav-tab" data-p="credits" onclick="goto('credits')">💰 Credits</button>
-      <button class="nav-tab" data-p="feasibility" onclick="goto('feasibility')">🚀 Feasibility</button>
+      <button class="nav-tab" data-p="insights" onclick="goto('insights')">💡 Insights</button>
     </div>
     <div class="nav-right">
+      <button onclick="toggleTheme()" id="theme-btn" style="background:none;border:1px solid var(--border);border-radius:10px;padding:6px 10px;cursor:pointer;font-size:14px;color:var(--text2);margin-right:6px;transition:all .2s" title="Toggle theme">🌙</button>
       <div class="house-switcher" onclick="toggleHousePanel()">
         <div class="live-dot"></div>
         <span id="nav-hid">TN-CH-001</span>
@@ -754,12 +766,12 @@ onValue(ref(rtdb,<span class="val">`gps/${houseId}`</span>),(snap)=>{<br>
         <div class="card">
           <div class="wt">🛒 Scope 3 Consumption</div>
           <div style="margin-top:10px">
-            <div style="border:2px dashed rgba(52,211,100,0.2);border-radius:14px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(52,211,100,0.02);margin-bottom:12px;position:relative;overflow:visible" id="upload-zone">
+            <label for="bill-upload-input" style="border:2px dashed rgba(52,211,100,0.3);border-radius:14px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(52,211,100,0.02);margin-bottom:12px;display:block;position:relative" id="upload-zone">
               <div style="font-size:24px;margin-bottom:6px" id="uz-icon">📤</div>
               <div style="font-size:13px;color:var(--text2);font-weight:600" id="uz-text">📱 Tap to Upload Bill Photo</div>
-              <div style="font-size:11px;color:var(--muted);margin-top:3px">Take photo or choose from gallery</div>
-              <input type="file" id="bill-upload-input" accept="image/*" onchange="ocrBillUpload(this.files[0])" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:10">
-            </div>
+              <div style="font-size:11px;color:var(--muted);margin-top:3px">Choose image from gallery or camera</div>
+              <input type="file" id="bill-upload-input" accept="image/*,application/pdf" onchange="ocrBillUpload(this.files[0])" style="position:absolute;width:1px;height:1px;opacity:0;top:0;left:0">
+            </label>
             <input class="inp" type="number" placeholder="₹ Amount" id="v-grocery" value="800" style="margin-bottom:8px">
             <div style="display:flex;gap:6px">
               <div class="tab-btn active" style="padding:6px 12px;border-radius:8px;font-size:11px" onclick="selCat(this,'food')">🥗 Food</div>
@@ -824,129 +836,192 @@ onValue(ref(rtdb,<span class="val">`gps/${houseId}`</span>),(snap)=>{<br>
       <div class="card"><div class="wt">💳 Ledger <span class="badge bv">🔒 Immutable</span></div><table class="ledger-table" style="margin-top:12px"><thead><tr><th>Date</th><th>Activity</th><th>Earned</th><th>Used</th><th>Balance</th></tr></thead><tbody id="ledger-body"></tbody></table></div>
     </div>
 
-    <!-- ══ FEASIBILITY GUIDE ══ -->
-    <div id="sub-feasibility" class="content" style="display:none">
-      <div class="section-title">🚀 How to Make This Project Feasible</div>
-      <div class="section-sub">A complete, honest roadmap — what to build NOW vs later, what judges care about, and how to present this professionally</div>
+    <!-- ══ INSIGHTS ══ -->
+    <div id="sub-insights" class="content" style="display:none">
+      <div class="section-title">💡 Consumption Insights</div>
+      <div class="section-sub">Your personalised reduction plan — see where you emit most and exactly how to cut it</div>
 
-      <!-- OVERALL PROGRESS -->
-      <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#0f3320,#1a2a1e)">
-        <div class="wt">📊 Project Completion Score</div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px">
-          <div style="text-align:center"><div style="font-family:'Cabinet Grotesk',sans-serif;font-size:32px;font-weight:900;color:var(--emerald)">85%</div><div style="font-size:11px;color:var(--muted);margin-top:4px">Frontend UI</div><div class="progress-bar-wrap"><div class="progress-bar" style="width:85%;background:var(--emerald)"></div></div></div>
-          <div style="text-align:center"><div style="font-family:'Cabinet Grotesk',sans-serif;font-size:32px;font-weight:900;color:var(--amber)">40%</div><div style="font-size:11px;color:var(--muted);margin-top:4px">Backend Firebase</div><div class="progress-bar-wrap"><div class="progress-bar" style="width:40%;background:var(--amber)"></div></div></div>
-          <div style="text-align:center"><div style="font-family:'Cabinet Grotesk',sans-serif;font-size:32px;font-weight:900;color:var(--sky)">60%</div><div style="font-size:11px;color:var(--muted);margin-top:4px">IoT Hardware</div><div class="progress-bar-wrap"><div class="progress-bar" style="width:60%;background:var(--sky)"></div></div></div>
-          <div style="text-align:center"><div style="font-family:'Cabinet Grotesk',sans-serif;font-size:32px;font-weight:900;color:var(--violet)">70%</div><div style="font-size:11px;color:var(--muted);margin-top:4px">Demo Readiness</div><div class="progress-bar-wrap"><div class="progress-bar" style="width:70%;background:var(--violet)"></div></div></div>
-        </div>
-      </div>
-
-      <!-- MUST DO -->
-      <div class="feas-card">
-        <div class="feas-title">🔴 MUST DO — Before Demo Day <span class="feas-priority p-must">CRITICAL</span></div>
-        <div class="checklist">
-          <div class="check-item"><div class="check-icon">🔥</div><div class="check-text"><strong>Set up Firebase Project</strong> — Create project, enable Phone Auth, create Firestore DB. Takes 20 minutes. Without this, no real data saves.</div></div>
-          <div class="check-item"><div class="check-icon">🏠</div><div class="check-text"><strong>Pre-register 3 demo houses</strong> — TN-CH-001 (high emission), TN-CB-002 (eco-friendly), KA-BL-001 (EV household). Add to Firestore manually. Shows judges scalability.</div></div>
-          <div class="check-item"><div class="check-icon">⚡</div><div class="check-text"><strong>ESP32 electricity demo</strong> — Connect ACS712 current sensor to ESP32. Point to a bulb. Turn ON → kWh rises → CO₂ updates on dashboard. This is your strongest hardware demo.</div></div>
-          <div class="check-item"><div class="check-icon">📱</div><div class="check-text"><strong>Deploy to Firebase Hosting</strong> — Run "firebase deploy" to get a live URL. Let judges open it on THEIR phone. This is very impressive and takes 5 minutes.</div></div>
-          <div class="check-item"><div class="check-icon">🧾</div><div class="check-text"><strong>Print physical demo QR codes</strong> — Print 5 QR codes (electricity bill, LPG, petrol, grocery, lifestyle). Scan them with phone during demo. Judges can touch/feel it.</div></div>
-          <div class="check-item"><div class="check-icon">🎬</div><div class="check-text"><strong>Rehearse 60-second demo flow</strong> — Login → House ID → Turn bulb ON → Scan fuel QR → Add plant → Show credits. Do it 10 times till smooth.</div></div>
-        </div>
-      </div>
-
-      <!-- SHOULD DO -->
-      <div class="feas-card">
-        <div class="feas-title">🟡 SHOULD DO — Makes It Much Stronger <span class="feas-priority p-should">HIGH PRIORITY</span></div>
-        <div class="checklist">
-          <div class="check-item"><div class="check-icon">👥</div><div class="check-text"><strong>Test multi-member login</strong> — Register 2 phones to same House ID. Have one person log data. Show on second phone it appears on dashboard. Proves real household system.</div></div>
-          <div class="check-item"><div class="check-icon">☀️</div><div class="check-text"><strong>Solar panel demo</strong> — Even a small 5W solar panel with a toggle switch. Toggle ON → reduction number drops → net carbon falls → credits rise. Very visual.</div></div>
-          <div class="check-item"><div class="check-icon">📊</div><div class="check-text"><strong>Show 3 houses on dashboard</strong> — Switch between TN-CH-001, TN-CB-002, KA-BL-001. Each has different emission, different credits. Proves this is a platform, not a single demo.</div></div>
-          <div class="check-item"><div class="check-icon">📄</div><div class="check-text"><strong>Generate a real PDF report</strong> — Use jsPDF library. Download button produces a dated carbon report. Judges love tangible outputs.</div></div>
-          <div class="check-item"><div class="check-icon">🚗</div><div class="check-text"><strong>Vehicle emission comparison</strong> — Show house with petrol bike vs house with EV. Same distance = different CO₂. Proves your transport formula works correctly.</div></div>
-        </div>
-      </div>
-
-      <!-- WHAT JUDGES LOOK FOR -->
-      <div class="feas-card">
-        <div class="feas-title">⚖️ What Judges Actually Score You On <span class="feas-priority p-should">KNOW THIS</span></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+      <!-- OVERALL SCORE -->
+      <div id="ins-score-card" class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#0f3320,#1a2a1e);border-color:rgba(52,211,100,0.3)">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
           <div>
-            <div style="font-size:12px;font-weight:700;color:var(--emerald);margin-bottom:10px">✅ What wins points</div>
-            <div class="checklist">
-              <div class="check-item"><div class="check-icon">🎯</div><div class="check-text"><strong>Working demo</strong> — Something actually runs. Even if limited scope.</div></div>
-              <div class="check-item"><div class="check-icon">🧠</div><div class="check-text"><strong>Clear problem statement</strong> — "Households can't track carbon easily. We fix that."</div></div>
-              <div class="check-item"><div class="check-icon">📈</div><div class="check-text"><strong>Scalability story</strong> — "This works for 1 house. At 10,000 houses it becomes a carbon marketplace."</div></div>
-              <div class="check-item"><div class="check-icon">🔬</div><div class="check-text"><strong>Scientific backing</strong> — IPCC factors, CEA grid factor, LCA method. Mention these.</div></div>
-              <div class="check-item"><div class="check-icon">💰</div><div class="check-text"><strong>Business model</strong> — Credit marketplace, ESG compliance for industry = real revenue.</div></div>
+            <div class="wt" style="margin-bottom:4px">🌿 Your Carbon Score</div>
+            <div style="font-size:12px;color:var(--muted)">Based on your latest tracked data</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:'Cabinet Grotesk',sans-serif;font-size:42px;font-weight:900;color:var(--emerald)" id="ins-score">B+</div>
+            <div style="font-size:11px;color:var(--muted)">Better than 62% of households</div>
+          </div>
+        </div>
+        <div style="margin-top:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px" id="ins-breakdown">
+          <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:18px">⚡</div>
+            <div style="font-size:16px;font-weight:900;color:var(--rose)" id="ins-elec-kg">—</div>
+            <div style="font-size:10px;color:var(--muted)">kg Electricity</div>
+          </div>
+          <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:18px">🔥</div>
+            <div style="font-size:16px;font-weight:900;color:var(--orange)" id="ins-lpg-kg">—</div>
+            <div style="font-size:10px;color:var(--muted)">kg LPG</div>
+          </div>
+          <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:18px">⛽</div>
+            <div style="font-size:16px;font-weight:900;color:var(--amber)" id="ins-fuel-kg">—</div>
+            <div style="font-size:10px;color:var(--muted)">kg Transport</div>
+          </div>
+          <div style="background:rgba(0,0,0,0.2);border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:18px">🛒</div>
+            <div style="font-size:16px;font-weight:900;color:var(--sky)" id="ins-groc-kg">—</div>
+            <div style="font-size:10px;color:var(--muted)">kg Grocery</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CATEGORY CARDS -->
+      <div class="g2" style="margin-bottom:14px">
+
+        <!-- ELECTRICITY -->
+        <div class="card" style="border-left:3px solid var(--rose)">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div style="font-size:24px">⚡</div>
+            <div>
+              <div class="wt" style="margin-bottom:2px">Electricity</div>
+              <div style="font-size:11px;color:var(--muted)">India Grid Factor: 0.7 kg CO₂/kWh</div>
             </div>
+            <div style="margin-left:auto;background:rgba(244,63,94,0.12);color:var(--rose);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700" id="ins-elec-level">High</div>
           </div>
-          <div>
-            <div style="font-size:12px;font-weight:700;color:var(--rose);margin-bottom:10px">❌ What loses points</div>
-            <div class="checklist">
-              <div class="check-item"><div class="check-icon">⚠️</div><div class="check-text"><strong>Overclaming</strong> — "Fully automated" when it's not. Say "simulates" instead.</div></div>
-              <div class="check-item"><div class="check-icon">⚠️</div><div class="check-text"><strong>Demo fails</strong> — Test everything 3 times before. Have a backup video recording.</div></div>
-              <div class="check-item"><div class="check-icon">⚠️</div><div class="check-text"><strong>No data showing</strong> — Judges want to SEE numbers change in real time.</div></div>
-              <div class="check-item"><div class="check-icon">⚠️</div><div class="check-text"><strong>Unclear explanation</strong> — Practice your 60-second pitch: problem → solution → demo → impact.</div></div>
+          <div style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--muted)">Your usage</span><span style="color:var(--text);font-weight:700" id="ins-elec-val">150 kWh/month</span></div>
+            <div style="background:var(--bg2);border-radius:6px;height:8px;overflow:hidden"><div id="ins-elec-bar" style="height:100%;border-radius:6px;background:var(--rose);width:75%;transition:width .5s"></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px"><span>Low (50)</span><span>Avg (120)</span><span>High (200+)</span></div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">💡 How to reduce:</div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)">
+            <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--emerald);font-weight:700;flex-shrink:0">→</span><span>Set AC to <strong style="color:var(--text2)">24°C</strong> instead of 18°C — saves 30–40% electricity and <strong style="color:var(--emerald)">~18 kg CO₂/month</strong></span></div>
+            <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--emerald);font-weight:700;flex-shrink:0">→</span><span>Switch to <strong style="color:var(--text2)">LED bulbs</strong> — 75% less energy than incandescent, saves <strong style="color:var(--emerald)">~5 kg CO₂/month</strong></span></div>
+            <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--emerald);font-weight:700;flex-shrink:0">→</span><span>Use <strong style="color:var(--text2)">solar panels</strong> — 2kW system covers 60% of average home use, offsets <strong style="color:var(--emerald)">~50 kg CO₂/month</strong></span></div>
+            <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--emerald);font-weight:700;flex-shrink:0">→</span><span>Unplug standby devices — phantom load is <strong style="color:var(--text2)">5–10%</strong> of your bill</span></div>
+          </div>
+          <div style="margin-top:12px;padding:8px 12px;background:rgba(52,211,100,0.05);border-radius:8px;font-size:11px;color:var(--emerald)">
+            🎯 Target: Under 100 kWh/month → saves <strong>~35 kg CO₂</strong> and ₹400–600 on bill
+          </div>
+        </div>
+
+        <!-- LPG -->
+        <div class="card" style="border-left:3px solid var(--orange)">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div style="font-size:24px">🔥</div>
+            <div>
+              <div class="wt" style="margin-bottom:2px">LPG / Cooking Gas</div>
+              <div style="font-size:11px;color:var(--muted)">1 cylinder = 42 kg CO₂</div>
             </div>
+            <div style="margin-left:auto;background:rgba(249,115,22,0.12);color:var(--orange);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700" id="ins-lpg-level">Medium</div>
           </div>
+          <div style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--muted)">Your usage</span><span style="color:var(--text);font-weight:700" id="ins-lpg-val">1 cylinder/month</span></div>
+            <div style="background:var(--bg2);border-radius:6px;height:8px;overflow:hidden"><div id="ins-lpg-bar" style="height:100%;border-radius:6px;background:var(--orange);width:50%;transition:width .5s"></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px"><span>Low (0.5)</span><span>Avg (1)</span><span>High (2+)</span></div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">💡 How to reduce:</div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)">
+            <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--emerald);font-weight:700;flex-shrink:0">→</span><span>Use <strong style="color:var(--text2)">induction cooktop</strong> for 50% of cooking — saves <strong style="color:var(--emerald)">~21 kg CO₂/month</strong></span></div>
+            <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--emerald);font-weight:700;flex-shrink:0">→</span><span><strong style="color:var(--text2)">Pressure cooker</strong> reduces cooking time by 70% — uses 30% less gas</span></div>
+            <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--emerald);font-weight:700;flex-shrink:0">→</span><span>Cover pots while cooking — retains heat, <strong style="color:var(--text2)">saves ~15% gas</strong></span></div>
+            <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--emerald);font-weight:700;flex-shrink:0">→</span><span><strong style="color:var(--text2)">Solar cooker</strong> for daytime meals — zero emissions for 1 meal/day</span></div>
+          </div>
+          <div style="margin-top:12px;padding:8px 12px;background:rgba(52,211,100,0.05);border-radius:8px;font-size:11px;color:var(--emerald)">
+            🎯 Target: 0.7 cylinders/month → saves <strong>~13 kg CO₂</strong> and ₹260 on subsidy
+          </div>
+        </div>
+
+        <!-- TRANSPORT -->
+        <div class="card" style="border-left:3px solid var(--amber)">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div style="font-size:24px">⛽</div>
+            <div>
+              <div class="wt" style="margin-bottom:2px">Transport / Fuel</div>
+              <div style="font-size:11px;color:var(--muted)">Petrol: 2.3 kg/L · Diesel: 2.7 kg/L</div>
+            </div>
+            <div style="margin-left:auto;background:rgba(251,191,36,0.12);color:var(--amber);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700" id="ins-fuel-level">Medium</div>
+          </div>
+          <div style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--muted)">Your usage</span><span style="color:var(--text);font-weight:700" id="ins-fuel-val">5L/month</span></div>
+            <div style="background:var(--bg2);border-radius:6px;height:8px;overflow:hidden"><div id="ins-fuel-bar" style="height:100%;border-radius:6px;background:var(--amber);width:40%;transition:width .5s"></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px"><span>Low (2L)</span><span>Avg (8L)</span><span>High (20L+)</span></div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">💡 How to reduce:</div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)">
+            <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--emerald);font-weight:700;flex-shrink:0">→</span><span>Switch to <strong style="color:var(--text2)">EV or CNG</strong> — EV emits 0.06 kg/km vs 0.15 kg/km petrol = <strong style="color:var(--emerald)">60% less CO₂</strong></span></div>
+            <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--emerald);font-weight:700;flex-shrink:0">→</span><span><strong style="color:var(--text2)">Carpool or public transport</strong> 2 days/week — cuts fuel emissions by 28%</span></div>
+            <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--emerald);font-weight:700;flex-shrink:0">→</span><span><strong style="color:var(--text2)">Maintain tyre pressure</strong> — underinflated tyres waste 3% more fuel</span></div>
+            <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--emerald);font-weight:700;flex-shrink:0">→</span><span>Avoid <strong style="color:var(--text2)">idling over 1 minute</strong> — turn off engine at signals over 30 sec</span></div>
+          </div>
+          <div style="margin-top:12px;padding:8px 12px;background:rgba(52,211,100,0.05);border-radius:8px;font-size:11px;color:var(--emerald)">
+            🎯 Target: Under 4L/month → saves <strong>~2.3 kg CO₂</strong> and ₹200 fuel cost
+          </div>
+        </div>
+
+        <!-- GROCERY -->
+        <div class="card" style="border-left:3px solid var(--sky)">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div style="font-size:24px">🛒</div>
+            <div>
+              <div class="wt" style="margin-bottom:2px">Grocery & Lifestyle</div>
+              <div style="font-size:11px;color:var(--muted)">Food: 0.005 kg CO₂/₹ · High: 0.01 kg/₹</div>
+            </div>
+            <div style="margin-left:auto;background:rgba(56,189,248,0.12);color:var(--sky);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700" id="ins-groc-level">Low</div>
+          </div>
+          <div style="margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--muted)">Your spend</span><span style="color:var(--text);font-weight:700" id="ins-groc-val">₹800/month</span></div>
+            <div style="background:var(--bg2);border-radius:6px;height:8px;overflow:hidden"><div id="ins-groc-bar" style="height:100%;border-radius:6px;background:var(--sky);width:30%;transition:width .5s"></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px"><span>Low (₹500)</span><span>Avg (₹1500)</span><span>High (₹4000+)</span></div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">💡 How to reduce:</div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)">
+            <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--emerald);font-weight:700;flex-shrink:0">→</span><span><strong style="color:var(--text2)">Buy local & seasonal</strong> produce — imported food has 50x higher transport emissions</span></div>
+            <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--emerald);font-weight:700;flex-shrink:0">→</span><span>Reduce <strong style="color:var(--text2)">meat consumption</strong> by 1 meal/week — beef is 27 kg CO₂/kg vs lentils at 0.9 kg CO₂/kg</span></div>
+            <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--emerald);font-weight:700;flex-shrink:0">→</span><span>Avoid <strong style="color:var(--text2)">packaged/processed food</strong> — packaging adds 15–20% to food emissions</span></div>
+            <div style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--emerald);font-weight:700;flex-shrink:0">→</span><span><strong style="color:var(--text2)">Compost food waste</strong> — diverts methane from landfill, offsets ~2 kg CO₂/month</span></div>
+          </div>
+          <div style="margin-top:12px;padding:8px 12px;background:rgba(52,211,100,0.05);border-radius:8px;font-size:11px;color:var(--emerald)">
+            🎯 Target: ₹600 on local/seasonal food → saves <strong>~1 kg CO₂</strong> and supports local farmers
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ACTION PLAN -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="wt">📋 Your 30-Day Action Plan</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Quick wins first — biggest impact for least effort</div>
+        <div style="display:flex;flex-direction:column;gap:10px" id="ins-actions">
+          <div style="display:flex;gap:12px;align-items:center;padding:12px;background:rgba(52,211,100,0.04);border:1px solid rgba(52,211,100,0.12);border-radius:12px">
+            <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#1a5c32,var(--emerald));display:flex;align-items:center;justify-content:center;font-weight:900;color:#000;font-size:13px;flex-shrink:0">1</div>
+            <div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text2)">Set AC to 24°C today</div><div style="font-size:11px;color:var(--muted)">Saves ~18 kg CO₂/month · ₹400 saved · Zero cost to implement</div></div>
+            <div style="font-size:11px;font-weight:700;color:var(--emerald);white-space:nowrap">−18 kg</div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;padding:12px;background:rgba(251,191,36,0.04);border:1px solid rgba(251,191,36,0.12);border-radius:12px">
+            <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#854d0e,var(--amber));display:flex;align-items:center;justify-content:center;font-weight:900;color:#000;font-size:13px;flex-shrink:0">2</div>
+            <div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text2)">Use pressure cooker for dal/rice</div><div style="font-size:11px;color:var(--muted)">Saves ~13 kg CO₂/month via reduced LPG · Cooks 70% faster</div></div>
+            <div style="font-size:11px;font-weight:700;color:var(--amber);white-space:nowrap">−13 kg</div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;padding:12px;background:rgba(56,189,248,0.04);border:1px solid rgba(56,189,248,0.12);border-radius:12px">
+            <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#0c4a6e,var(--sky));display:flex;align-items:center;justify-content:center;font-weight:900;color:#000;font-size:13px;flex-shrink:0">3</div>
+            <div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text2)">Carpool or bus 2 days/week</div><div style="font-size:11px;color:var(--muted)">Saves ~3 kg CO₂/month · ₹200 fuel savings</div></div>
+            <div style="font-size:11px;font-weight:700;color:var(--sky);white-space:nowrap">−3 kg</div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;padding:12px;background:rgba(163,230,53,0.04);border:1px solid rgba(163,230,53,0.12);border-radius:12px">
+            <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#365314,var(--lime));display:flex;align-items:center;justify-content:center;font-weight:900;color:#000;font-size:13px;flex-shrink:0">4</div>
+            <div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text2)">Plant 2 more trees this month</div><div style="font-size:11px;color:var(--muted)">Offsets 0.2 kg CO₂/day · Earns 0.5 credits/week</div></div>
+            <div style="font-size:11px;font-weight:700;color:var(--lime);white-space:nowrap">−6 kg</div>
+          </div>
+        </div>
+        <div style="margin-top:14px;padding:12px;background:rgba(52,211,100,0.06);border-radius:10px;text-align:center">
+          <div style="font-size:13px;font-weight:700;color:var(--emerald)">Total potential savings: <span id="ins-total-save">~40 kg CO₂/month</span></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px">That's equivalent to not driving <strong style="color:var(--text2)">~174 km</strong> or planting <strong style="color:var(--text2)">2 trees</strong></div>
         </div>
       </div>
 
-      <!-- NICE TO HAVE -->
-      <div class="feas-card">
-        <div class="feas-title">🟢 NICE TO HAVE — If Time Allows <span class="feas-priority p-nice">BONUS</span></div>
-        <div class="checklist">
-          <div class="check-item"><div class="check-icon">🌿</div><div class="check-text"><strong>YOLO plant detection</strong> — Use a lightweight pre-trained model (MobileNet) to detect "plant" in camera photo. Even basic detection is impressive. Don't build from scratch.</div></div>
-          <div class="check-item"><div class="check-icon">📍</div><div class="check-text"><strong>Real GPS integration</strong> — Use browser navigator.geolocation for house pin. For vehicle, simulate updates every 30 seconds from a second phone.</div></div>
-          <div class="check-item"><div class="check-icon">🧾</div><div class="check-text"><strong>OCR bill reading</strong> — Use Tesseract.js (free, browser-based) to extract text from uploaded bill image. Extract ₹ amount automatically.</div></div>
-          <div class="check-item"><div class="check-icon">📱</div><div class="check-text"><strong>PWA (Progressive Web App)</strong> — Add manifest.json so judges can "install" it on phone like an app. Takes 10 minutes and looks very professional.</div></div>
-        </div>
-      </div>
-
-      <!-- FUTURE / REAL WORLD -->
-      <div class="feas-card">
-        <div class="feas-title">🔮 Future Roadmap — Tell Judges This <span class="feas-priority p-future">SCALE UP</span></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px">
-          <div style="padding:14px;background:var(--bg2);border-radius:12px;border:1px solid var(--border)">
-            <div style="font-size:16px;margin-bottom:6px">🏙️</div>
-            <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px">City Scale</div>
-            <div style="font-size:11px;color:var(--muted);line-height:1.6">Aggregate 10,000+ households. Sell verified reduction data to municipalities for carbon accounting.</div>
-          </div>
-          <div style="padding:14px;background:var(--bg2);border-radius:12px;border:1px solid var(--border)">
-            <div style="font-size:16px;margin-bottom:6px">🏭</div>
-            <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px">Industry Market</div>
-            <div style="font-size:11px;color:var(--muted);line-height:1.6">Companies buy household carbon credits for Scope 3 ESG compliance. ₹80–120 per credit = real income for households.</div>
-          </div>
-          <div style="padding:14px;background:var(--bg2);border-radius:12px;border:1px solid var(--border)">
-            <div style="font-size:16px;margin-bottom:6px">🤝</div>
-            <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px">API Integration</div>
-            <div style="font-size:11px;color:var(--muted);line-height:1.6">UPI payment APIs auto-pull bill data. Smart meters push real-time electricity. LPG SMS auto-updates cylinders.</div>
-          </div>
-          <div style="padding:14px;background:var(--bg2);border-radius:12px;border:1px solid var(--border)">
-            <div style="font-size:16px;margin-bottom:6px">🏛️</div>
-            <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px">Govt Integration</div>
-            <div style="font-size:11px;color:var(--muted);line-height:1.6">Link with PDS ration cards, PMUY LPG scheme, PM-KUSUM solar. Government-backed credit validation.</div>
-          </div>
-          <div style="padding:14px;background:var(--bg2);border-radius:12px;border:1px solid var(--border)">
-            <div style="font-size:16px;margin-bottom:6px">🤖</div>
-            <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px">AI Recommendations</div>
-            <div style="font-size:11px;color:var(--muted);line-height:1.6">Personalized tips: "Your AC uses 40% of emissions. Setting 24°C saves ₹200/month and 15 kg CO₂."</div>
-          </div>
-          <div style="padding:14px;background:var(--bg2);border-radius:12px;border:1px solid var(--border)">
-            <div style="font-size:16px;margin-bottom:6px">⛓️</div>
-            <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:4px">Blockchain Ledger</div>
-            <div style="font-size:11px;color:var(--muted);line-height:1.6">Immutable credit verification on-chain. Makes credits tradeable on carbon exchanges. Institutional credibility.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- PITCH LINE -->
-      <div class="feas-card" style="background:linear-gradient(135deg,#0f3320,#1a2a1e);border-color:rgba(52,211,100,0.3);text-align:center">
-        <div style="font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">Your Winning Pitch Line</div>
-        <div style="font-family:'Cabinet Grotesk',sans-serif;font-size:22px;font-weight:900;line-height:1.4;background:linear-gradient(90deg,var(--emerald),var(--lime));-webkit-background-clip:text;-webkit-text-fill-color:transparent;max-width:700px;margin:0 auto">
-          "We built a personal carbon account for every household — measuring real emissions, rewarding real reductions, and connecting households to industry carbon markets."
-        </div>
-        <div style="margin-top:16px;font-size:13px;color:var(--muted)">Follow with: live IoT demo → QR scan → dashboard update → credits → industry sale</div>
-      </div>
     </div>
 
   </div>
@@ -967,10 +1042,10 @@ onValue(ref(rtdb,<span class="val">`gps/${houseId}`</span>),(snap)=>{<br>
   <div style="font-family:'Cabinet Grotesk',sans-serif;font-size:15px;font-weight:800;color:var(--text)" id="scanner-status">Align QR code within frame</div>
   <div style="font-size:12px;color:var(--muted);text-align:center;max-width:260px" id="scanner-hint">Point camera at QR code on your bill</div>
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center">
-    <div style="position:relative;overflow:hidden;display:inline-block">
-      <button style="padding:11px 20px;background:linear-gradient(135deg,#1e6b37,#34d364);border:none;border-radius:11px;color:#000;font-weight:900;cursor:pointer;font-size:13px">📁 Upload QR Photo</button>
-      <input type="file" accept="image/*,application/pdf" onchange="scanQRFromImage(this.files[0]);closeScanner();" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:100px">
-    </div>
+    <label style="display:inline-block;padding:11px 20px;background:linear-gradient(135deg,#1e6b37,#34d364);border-radius:11px;color:#000;font-weight:900;cursor:pointer;font-size:13px;position:relative">
+      📁 Upload QR Photo
+      <input type="file" accept="image/*" onchange="scanQRFromImage(this.files[0]);closeScanner();" style="position:absolute;width:1px;height:1px;opacity:0;top:0;left:0">
+    </label>
     <button onclick="closeScanner()" style="padding:11px 20px;background:none;border:1px solid var(--border);border-radius:11px;color:var(--muted);cursor:pointer;font-size:13px">✕ Cancel</button>
   </div>
 </div>
@@ -1081,6 +1156,61 @@ function goto(p){
   if(p==='map'){drawMapCanvas();renderMapVehicles();}
   if(p==='credits')renderLedger();
   if(p==='qrcodes')renderQRGrid();
+  if(p==='insights')updateInsights();
+}
+
+// ── THEME TOGGLE ──
+function toggleTheme(){
+  const light=document.body.classList.toggle('light-mode');
+  const btn=document.getElementById('theme-btn');
+  if(btn) btn.textContent=light?'☀️':'🌙';
+  localStorage.setItem('gc-theme',light?'light':'dark');
+}
+(function(){
+  if(localStorage.getItem('gc-theme')==='light'){
+    document.body.classList.add('light-mode');
+    const btn=document.getElementById('theme-btn');
+    if(btn) btn.textContent='☀️';
+  }
+})();
+
+// ── INSIGHTS UPDATER ──
+function updateInsights(){
+  const elec=parseFloat(document.getElementById('v-elec')?.textContent)||150;
+  const lpg=parseInt(document.getElementById('v-lpg')?.textContent)||1;
+  const fuel=parseFloat(document.getElementById('v-fuel')?.textContent)||5;
+  const groc=parseFloat(document.getElementById('v-grocery')?.value)||800;
+  const elecKg=+(elec*0.7).toFixed(1);
+  const lpgKg=+(lpg*42).toFixed(1);
+  const fuelKg=+(fuel*2.3).toFixed(1);
+  const grocKg=+(groc*0.005).toFixed(2);
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  set('ins-elec-kg',elecKg+' kg');
+  set('ins-lpg-kg',lpgKg+' kg');
+  set('ins-fuel-kg',fuelKg+' kg');
+  set('ins-groc-kg',grocKg+' kg');
+  set('ins-elec-val',elec+' kWh/month');
+  set('ins-lpg-val',lpg+' cylinder(s)/month');
+  set('ins-fuel-val',fuel+'L/month');
+  set('ins-groc-val','₹'+groc+'/month');
+  const bar=(id,pct)=>{const el=document.getElementById(id);if(el)el.style.width=Math.min(100,pct)+'%';};
+  bar('ins-elec-bar',(elec/200)*100);
+  bar('ins-lpg-bar',(lpg/2)*100);
+  bar('ins-fuel-bar',(fuel/20)*100);
+  bar('ins-groc-bar',(groc/4000)*100);
+  const lvl=(id,val,low,mid)=>{
+    const el=document.getElementById(id);if(!el)return;
+    if(val<=low){el.textContent='Low';el.style.background='rgba(52,211,100,0.12)';el.style.color='var(--emerald)';}
+    else if(val<=mid){el.textContent='Medium';el.style.background='rgba(251,191,36,0.12)';el.style.color='var(--amber)';}
+    else{el.textContent='High';el.style.background='rgba(244,63,94,0.12)';el.style.color='var(--rose)';}
+  };
+  lvl('ins-elec-level',elec,80,150);
+  lvl('ins-lpg-level',lpg,0.7,1.2);
+  lvl('ins-fuel-level',fuel,4,12);
+  lvl('ins-groc-level',groc,600,2000);
+  const total=elecKg+lpgKg+fuelKg+grocKg;
+  const scoreEl=document.getElementById('ins-score');
+  if(scoreEl) scoreEl.textContent=total<10?'A+':total<20?'A':total<35?'B+':total<50?'B':total<70?'C':'D';
 }
 
 // ═══ MEMBERS ═══
@@ -1897,20 +2027,24 @@ function processQRData(rawText) {
       document.getElementById('r-elec').value = data.units || 0;
       document.getElementById('v-elec').textContent = data.units || 0;
       toast('⚡', `Bill scanned! ${data.units} kWh auto-filled!`);
-      setTimeout(() => { calcAll(); goto('track'); }, 500);
+      goto('qrcodes');
+      setTimeout(() => { calcAll(); goto('track'); }, 2500);
     } else if (data.category === 'lpg') {
       document.getElementById('v-lpg').textContent = data.cylinders || 1;
       toast('🔥', `LPG scanned! ${data.cylinders} cylinder(s) auto-filled!`);
-      setTimeout(() => { calcAll(); goto('track'); }, 500);
+      goto('qrcodes');
+      setTimeout(() => { calcAll(); goto('track'); }, 2500);
     } else if (data.category === 'transport') {
       document.getElementById('r-fuel').value = data.litres || 0;
       document.getElementById('v-fuel').textContent = data.litres || 0;
       toast('⛽', `Fuel scanned! ${data.litres}L auto-filled!`);
-      setTimeout(() => { calcAll(); goto('track'); }, 500);
+      goto('qrcodes');
+      setTimeout(() => { calcAll(); goto('track'); }, 2500);
     } else if (data.category === 'grocery') {
       document.getElementById('v-grocery').value = data.amount_rs || 0;
       toast('🛒', `Grocery scanned! Rs.${data.amount_rs} auto-filled!`);
-      setTimeout(() => { calcAll(); goto('track'); }, 500);
+      goto('qrcodes');
+      setTimeout(() => { calcAll(); goto('track'); }, 2500);
     }
     // Save to Firestore
     const house = APP.houses[APP.currentHouse];
