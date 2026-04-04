@@ -839,10 +839,208 @@ onValue(ref(rtdb,<span class="val">`gps/${houseId}`</span>),(snap)=>{<br>
     <!-- ══ INSIGHTS ══ -->
     <div id="sub-insights" class="content" style="display:none">
       <div class="section-title">💡 Consumption Insights</div>
-      <div class="section-sub">Your personalised reduction plan — see where you emit most and exactly how to cut it</div>
+      <div class="section-sub">Live breakdown · Monthly trends · Personalised reduction plan</div>
 
-      <!-- OVERALL SCORE -->
-      <div id="ins-score-card" class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#0f3320,#1a2a1e);border-color:rgba(52,211,100,0.3)">
+      <!-- SCORE + QUICK STATS -->
+      <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#0f3320,#1a2a1e);border-color:rgba(52,211,100,0.3)">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+          <div>
+            <div class="wt" style="margin-bottom:4px">🌿 Your Carbon Score</div>
+            <div style="font-size:12px;color:var(--muted)">Based on latest tracked data · Updates on Calculate</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-family:'Cabinet Grotesk',sans-serif;font-size:48px;font-weight:900;color:var(--emerald);line-height:1" id="ins-score">B+</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px" id="ins-score-sub">Better than 62% of households</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+          <div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:18px">⚡</div>
+            <div style="font-size:15px;font-weight:900;color:var(--rose)" id="ins-elec-kg">—</div>
+            <div style="font-size:10px;color:var(--muted)">kg Electricity</div>
+          </div>
+          <div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:18px">🔥</div>
+            <div style="font-size:15px;font-weight:900;color:var(--orange)" id="ins-lpg-kg">—</div>
+            <div style="font-size:10px;color:var(--muted)">kg LPG</div>
+          </div>
+          <div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:18px">⛽</div>
+            <div style="font-size:15px;font-weight:900;color:var(--amber)" id="ins-fuel-kg">—</div>
+            <div style="font-size:10px;color:var(--muted)">kg Transport</div>
+          </div>
+          <div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:18px">🛒</div>
+            <div style="font-size:15px;font-weight:900;color:var(--sky)" id="ins-groc-kg">—</div>
+            <div style="font-size:10px;color:var(--muted)">kg Grocery</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHARTS ROW 1: Donut + Monthly Growth -->
+      <div class="g2" style="margin-bottom:14px">
+        <div class="card">
+          <div class="wt">📊 Emission Share</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">% contribution by category this month</div>
+          <div class="cbox" style="height:220px"><canvas id="ins-donut"></canvas></div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;justify-content:center" id="ins-donut-legend"></div>
+        </div>
+        <div class="card">
+          <div class="wt">📈 Monthly CO₂ Trend</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Last 6 months · Total emission vs target</div>
+          <div class="cbox" style="height:220px"><canvas id="ins-monthly"></canvas></div>
+        </div>
+      </div>
+
+      <!-- CHARTS ROW 2: Category bars + This month vs last -->
+      <div class="g2" style="margin-bottom:14px">
+        <div class="card">
+          <div class="wt">🔋 Category Breakdown</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">kg CO₂ per category · vs household average</div>
+          <div class="cbox" style="height:200px"><canvas id="ins-bar"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="wt">📅 This Month vs Last</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Week-by-week comparison</div>
+          <div class="cbox" style="height:200px"><canvas id="ins-compare"></canvas></div>
+        </div>
+      </div>
+
+      <!-- CATEGORY DETAIL CARDS -->
+      <div class="g2" style="margin-bottom:14px">
+
+        <!-- ELECTRICITY -->
+        <div class="card" style="border-left:3px solid var(--rose)">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div style="font-size:22px">⚡</div>
+            <div style="flex:1"><div class="wt" style="margin-bottom:1px">Electricity</div><div style="font-size:10px;color:var(--muted)">0.7 kg CO₂/kWh · India CEA grid</div></div>
+            <div style="padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700" id="ins-elec-badge">High</div>
+          </div>
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="color:var(--muted)">Usage</span><span style="font-weight:700" id="ins-elec-val">150 kWh</span></div>
+            <div style="background:var(--bg2);border-radius:5px;height:7px"><div id="ins-elec-bar" style="height:100%;border-radius:5px;background:var(--rose);width:75%;transition:width .6s"></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Low 50</span><span>Avg 120</span><span>High 200+</span></div>
+          </div>
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">How to reduce:</div>
+          <div style="display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--muted)">
+            <div>→ AC at <b style="color:var(--text2)">24°C</b> instead of 18°C → saves <b style="color:var(--emerald)">~18 kg/month</b></div>
+            <div>→ <b style="color:var(--text2)">LED bulbs</b> → 75% less energy → saves <b style="color:var(--emerald)">~5 kg/month</b></div>
+            <div>→ <b style="color:var(--text2)">2kW solar</b> covers 60% usage → offsets <b style="color:var(--emerald)">~50 kg/month</b></div>
+            <div>→ Unplug standby devices → phantom load is <b style="color:var(--text2)">5–10%</b> of bill</div>
+          </div>
+          <div style="margin-top:8px;padding:7px 10px;background:rgba(52,211,100,0.05);border-radius:8px;font-size:11px;color:var(--emerald)">🎯 Target: &lt;100 kWh → saves ~35 kg CO₂ and ₹400–600</div>
+        </div>
+
+        <!-- LPG -->
+        <div class="card" style="border-left:3px solid var(--orange)">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div style="font-size:22px">🔥</div>
+            <div style="flex:1"><div class="wt" style="margin-bottom:1px">LPG / Cooking Gas</div><div style="font-size:10px;color:var(--muted)">42 kg CO₂/cylinder</div></div>
+            <div style="padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700" id="ins-lpg-badge">Medium</div>
+          </div>
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="color:var(--muted)">Usage</span><span style="font-weight:700" id="ins-lpg-val">1 cylinder</span></div>
+            <div style="background:var(--bg2);border-radius:5px;height:7px"><div id="ins-lpg-bar" style="height:100%;border-radius:5px;background:var(--orange);width:50%;transition:width .6s"></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Low 0.5</span><span>Avg 1</span><span>High 2+</span></div>
+          </div>
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">How to reduce:</div>
+          <div style="display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--muted)">
+            <div>→ <b style="color:var(--text2)">Induction cooktop</b> 50% of cooking → saves <b style="color:var(--emerald)">~21 kg/month</b></div>
+            <div>→ <b style="color:var(--text2)">Pressure cooker</b> → 70% less cooking time → 30% less gas</div>
+            <div>→ Cover pots while cooking → retains heat → <b style="color:var(--text2)">15% gas saved</b></div>
+            <div>→ <b style="color:var(--text2)">Solar cooker</b> daytime → zero emissions for 1 meal/day</div>
+          </div>
+          <div style="margin-top:8px;padding:7px 10px;background:rgba(52,211,100,0.05);border-radius:8px;font-size:11px;color:var(--emerald)">🎯 Target: 0.7 cyl/month → saves ~13 kg CO₂ and ₹260</div>
+        </div>
+
+        <!-- TRANSPORT -->
+        <div class="card" style="border-left:3px solid var(--amber)">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div style="font-size:22px">⛽</div>
+            <div style="flex:1"><div class="wt" style="margin-bottom:1px">Transport / Fuel</div><div style="font-size:10px;color:var(--muted)">Petrol 2.3 kg/L · Diesel 2.7 kg/L</div></div>
+            <div style="padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700" id="ins-fuel-badge">Medium</div>
+          </div>
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="color:var(--muted)">Usage</span><span style="font-weight:700" id="ins-fuel-val">5L</span></div>
+            <div style="background:var(--bg2);border-radius:5px;height:7px"><div id="ins-fuel-bar" style="height:100%;border-radius:5px;background:var(--amber);width:40%;transition:width .6s"></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Low 2L</span><span>Avg 8L</span><span>High 20L+</span></div>
+          </div>
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">How to reduce:</div>
+          <div style="display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--muted)">
+            <div>→ <b style="color:var(--text2)">EV or CNG</b> → 60% less CO₂ vs petrol per km</div>
+            <div>→ <b style="color:var(--text2)">Carpool 2 days/week</b> → cuts transport CO₂ by 28%</div>
+            <div>→ <b style="color:var(--text2)">Correct tyre pressure</b> → underinflated wastes 3% extra fuel</div>
+            <div>→ No idling &gt;30 sec → turn off engine at long signals</div>
+          </div>
+          <div style="margin-top:8px;padding:7px 10px;background:rgba(52,211,100,0.05);border-radius:8px;font-size:11px;color:var(--emerald)">🎯 Target: &lt;4L/month → saves ~2.3 kg CO₂ and ₹200</div>
+        </div>
+
+        <!-- GROCERY -->
+        <div class="card" style="border-left:3px solid var(--sky)">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div style="font-size:22px">🛒</div>
+            <div style="flex:1"><div class="wt" style="margin-bottom:1px">Grocery & Lifestyle</div><div style="font-size:10px;color:var(--muted)">Food 0.005 · Mixed 0.007 · High 0.01 kg/₹</div></div>
+            <div style="padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700" id="ins-groc-badge">Low</div>
+          </div>
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="color:var(--muted)">Spend</span><span style="font-weight:700" id="ins-groc-val">₹800</span></div>
+            <div style="background:var(--bg2);border-radius:5px;height:7px"><div id="ins-groc-bar" style="height:100%;border-radius:5px;background:var(--sky);width:30%;transition:width .6s"></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>Low ₹500</span><span>Avg ₹1500</span><span>High ₹4000+</span></div>
+          </div>
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px">How to reduce:</div>
+          <div style="display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--muted)">
+            <div>→ <b style="color:var(--text2)">Buy local & seasonal</b> → imported food = 50x more transport CO₂</div>
+            <div>→ 1 less meat meal/week → beef 27 kg CO₂/kg vs lentils 0.9 kg CO₂/kg</div>
+            <div>→ Avoid <b style="color:var(--text2)">packaged food</b> → packaging adds 15–20% to food emissions</div>
+            <div>→ <b style="color:var(--text2)">Compost food waste</b> → saves ~2 kg CO₂/month from landfill</div>
+          </div>
+          <div style="margin-top:8px;padding:7px 10px;background:rgba(52,211,100,0.05);border-radius:8px;font-size:11px;color:var(--emerald)">🎯 Target: ₹600 local food → saves ~1 kg CO₂, supports farmers</div>
+        </div>
+
+      </div>
+
+      <!-- THIS MONTH TIPS -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="wt">🗓️ This Month's Focus</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px" id="ins-month-label">April 2026 · Personalised based on your data</div>
+        <div style="display:flex;flex-direction:column;gap:10px" id="ins-tips">
+          <!-- filled by updateInsights() -->
+        </div>
+      </div>
+
+      <!-- 30-DAY ACTION PLAN -->
+      <div class="card">
+        <div class="wt">📋 30-Day Action Plan</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Ranked by impact — do these in order</div>
+        <div style="display:flex;flex-direction:column;gap:8px" id="ins-actions">
+          <div style="display:flex;gap:10px;align-items:center;padding:10px;background:rgba(52,211,100,0.04);border:1px solid rgba(52,211,100,0.12);border-radius:10px">
+            <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#1a5c32,var(--emerald));display:flex;align-items:center;justify-content:center;font-weight:900;color:#000;font-size:12px;flex-shrink:0">1</div>
+            <div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--text2)">Set AC to 24°C today</div><div style="font-size:11px;color:var(--muted)">Saves ~18 kg CO₂/month · ₹400 saved · Zero cost</div></div>
+            <div style="font-size:11px;font-weight:800;color:var(--emerald)">−18 kg</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;padding:10px;background:rgba(249,115,22,0.04);border:1px solid rgba(249,115,22,0.12);border-radius:10px">
+            <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#7c2d12,var(--orange));display:flex;align-items:center;justify-content:center;font-weight:900;color:#000;font-size:12px;flex-shrink:0">2</div>
+            <div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--text2)">Use pressure cooker for dal & rice</div><div style="font-size:11px;color:var(--muted)">Saves ~13 kg CO₂/month · 70% faster cooking</div></div>
+            <div style="font-size:11px;font-weight:800;color:var(--orange)">−13 kg</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;padding:10px;background:rgba(56,189,248,0.04);border:1px solid rgba(56,189,248,0.12);border-radius:10px">
+            <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#0c4a6e,var(--sky));display:flex;align-items:center;justify-content:center;font-weight:900;color:#000;font-size:12px;flex-shrink:0">3</div>
+            <div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--text2)">Carpool or bus 2 days/week</div><div style="font-size:11px;color:var(--muted)">Saves ~3 kg CO₂/month · ₹200 fuel savings</div></div>
+            <div style="font-size:11px;font-weight:800;color:var(--sky)">−3 kg</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;padding:10px;background:rgba(163,230,53,0.04);border:1px solid rgba(163,230,53,0.12);border-radius:10px">
+            <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#365314,var(--lime));display:flex;align-items:center;justify-content:center;font-weight:900;color:#000;font-size:12px;flex-shrink:0">4</div>
+            <div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--text2)">Plant 2 more trees this month</div><div style="font-size:11px;color:var(--muted)">Offsets 0.2 kg/day · Earns 0.5 credits/week</div></div>
+            <div style="font-size:11px;font-weight:800;color:var(--lime)">−6 kg</div>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding:10px 14px;background:rgba(52,211,100,0.06);border-radius:10px;text-align:center">
+          <div style="font-size:13px;font-weight:700;color:var(--emerald)">Total potential: <span id="ins-total-save">~40 kg CO₂/month</span></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">≈ not driving <b style="color:var(--text2)">174 km</b> · or planting <b style="color:var(--text2)">2 trees</b></div>
+        </div>
+      </div>
+
+    </div>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
           <div>
             <div class="wt" style="margin-bottom:4px">🌿 Your Carbon Score</div>
@@ -1175,42 +1373,157 @@ function toggleTheme(){
 })();
 
 // ── INSIGHTS UPDATER ──
+let insCharts = {};
 function updateInsights(){
   const elec=parseFloat(document.getElementById('v-elec')?.textContent)||150;
   const lpg=parseInt(document.getElementById('v-lpg')?.textContent)||1;
   const fuel=parseFloat(document.getElementById('v-fuel')?.textContent)||5;
   const groc=parseFloat(document.getElementById('v-grocery')?.value)||800;
+
   const elecKg=+(elec*0.7).toFixed(1);
   const lpgKg=+(lpg*42).toFixed(1);
   const fuelKg=+(fuel*2.3).toFixed(1);
   const grocKg=+(groc*0.005).toFixed(2);
-  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
-  set('ins-elec-kg',elecKg+' kg');
-  set('ins-lpg-kg',lpgKg+' kg');
-  set('ins-fuel-kg',fuelKg+' kg');
-  set('ins-groc-kg',grocKg+' kg');
-  set('ins-elec-val',elec+' kWh/month');
-  set('ins-lpg-val',lpg+' cylinder(s)/month');
-  set('ins-fuel-val',fuel+'L/month');
-  set('ins-groc-val','₹'+groc+'/month');
-  const bar=(id,pct)=>{const el=document.getElementById(id);if(el)el.style.width=Math.min(100,pct)+'%';};
-  bar('ins-elec-bar',(elec/200)*100);
-  bar('ins-lpg-bar',(lpg/2)*100);
-  bar('ins-fuel-bar',(fuel/20)*100);
-  bar('ins-groc-bar',(groc/4000)*100);
+  const totalKg=+(elecKg+lpgKg+fuelKg+grocKg).toFixed(1);
+
+  // Update text values
+  const s=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  s('ins-elec-kg',elecKg+' kg'); s('ins-lpg-kg',lpgKg+' kg');
+  s('ins-fuel-kg',fuelKg+' kg'); s('ins-groc-kg',grocKg+' kg');
+  s('ins-elec-val',elec+' kWh'); s('ins-lpg-val',lpg+' cylinder(s)');
+  s('ins-fuel-val',fuel+'L'); s('ins-groc-val','₹'+groc);
+  s('ins-month-label',new Date().toLocaleString('en-IN',{month:'long',year:'numeric'})+' · Personalised based on your data');
+
+  // Progress bars
+  const b=(id,pct,col)=>{const el=document.getElementById(id);if(el){el.style.width=Math.min(100,pct)+'%';if(col)el.style.background=col;}};
+  b('ins-elec-bar',(elec/200)*100); b('ins-lpg-bar',(lpg/2)*100);
+  b('ins-fuel-bar',(fuel/20)*100); b('ins-groc-bar',(groc/4000)*100);
+
+  // Level badges
   const lvl=(id,val,low,mid)=>{
     const el=document.getElementById(id);if(!el)return;
-    if(val<=low){el.textContent='Low';el.style.background='rgba(52,211,100,0.12)';el.style.color='var(--emerald)';}
-    else if(val<=mid){el.textContent='Medium';el.style.background='rgba(251,191,36,0.12)';el.style.color='var(--amber)';}
-    else{el.textContent='High';el.style.background='rgba(244,63,94,0.12)';el.style.color='var(--rose)';}
+    if(val<=low){el.textContent='✅ Low';el.style.background='rgba(52,211,100,0.15)';el.style.color='var(--emerald)';}
+    else if(val<=mid){el.textContent='⚠️ Medium';el.style.background='rgba(251,191,36,0.15)';el.style.color='var(--amber)';}
+    else{el.textContent='🔴 High';el.style.background='rgba(244,63,94,0.15)';el.style.color='var(--rose)';}
   };
-  lvl('ins-elec-level',elec,80,150);
-  lvl('ins-lpg-level',lpg,0.7,1.2);
-  lvl('ins-fuel-level',fuel,4,12);
-  lvl('ins-groc-level',groc,600,2000);
-  const total=elecKg+lpgKg+fuelKg+grocKg;
+  lvl('ins-elec-badge',elec,80,150); lvl('ins-lpg-badge',lpg,0.7,1.2);
+  lvl('ins-fuel-badge',fuel,4,12); lvl('ins-groc-badge',groc,600,2000);
+
+  // Score
   const scoreEl=document.getElementById('ins-score');
-  if(scoreEl) scoreEl.textContent=total<10?'A+':total<20?'A':total<35?'B+':total<50?'B':total<70?'C':'D';
+  const scoreSub=document.getElementById('ins-score-sub');
+  const score=totalKg<10?'A+':totalKg<20?'A':totalKg<35?'B+':totalKg<50?'B':totalKg<70?'C':'D';
+  const pct=totalKg<10?92:totalKg<20?80:totalKg<35?65:totalKg<50?45:totalKg<70?30:15;
+  if(scoreEl)scoreEl.textContent=score;
+  if(scoreSub)scoreSub.textContent='Better than '+pct+'% of households · '+totalKg+' kg total CO₂';
+
+  // This month tips
+  const tipsEl=document.getElementById('ins-tips');
+  if(tipsEl){
+    const tips=[];
+    if(elec>120) tips.push({icon:'⚡',col:'var(--rose)',tip:'Your electricity is above average. Set AC to 24°C and unplug standby devices this month.',save:'Potential saving: ~18 kg CO₂'});
+    if(lpg>1) tips.push({icon:'🔥',col:'var(--orange)',tip:'You used '+lpg+' cylinder(s). Try induction cooktop for 50% of meals to cut this in half.',save:'Potential saving: ~21 kg CO₂'});
+    if(fuel>8) tips.push({icon:'⛽',col:'var(--amber)',tip:'High fuel usage detected. Carpooling 2 days/week could save you ₹200 and reduce transport CO₂ by 28%.',save:'Potential saving: ~5 kg CO₂'});
+    if(groc>1500) tips.push({icon:'🛒',col:'var(--sky)',tip:'High grocery spend. Switching to local seasonal produce cuts transport emissions significantly.',save:'Potential saving: ~1.5 kg CO₂'});
+    if(tips.length===0) tips.push({icon:'🌿',col:'var(--emerald)',tip:'Great job! Your emissions are low. Keep it up and plant more trees to earn extra credits.',save:'You are already saving ~40 kg CO₂ vs average!'});
+    tipsEl.innerHTML=tips.map(t=>`
+      <div style="display:flex;gap:10px;padding:10px;background:var(--bg2);border-radius:10px;border-left:3px solid ${t.col}">
+        <div style="font-size:20px;flex-shrink:0">${t.icon}</div>
+        <div><div style="font-size:12px;color:var(--text2);margin-bottom:3px">${t.tip}</div>
+        <div style="font-size:11px;color:var(--emerald);font-weight:700">${t.save}</div></div>
+      </div>`).join('');
+  }
+
+  // ── CHART 1: Donut ──
+  const donutCtx=document.getElementById('ins-donut');
+  if(donutCtx){
+    if(insCharts.donut) insCharts.donut.destroy();
+    insCharts.donut=new Chart(donutCtx,{
+      type:'doughnut',
+      data:{
+        labels:['Electricity','LPG','Transport','Grocery'],
+        datasets:[{
+          data:[elecKg,lpgKg,fuelKg,grocKg],
+          backgroundColor:['rgba(244,63,94,0.8)','rgba(249,115,22,0.8)','rgba(251,191,36,0.8)','rgba(56,189,248,0.8)'],
+          borderWidth:0,
+          hoverOffset:6
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        cutout:'65%',
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:function(ctx){
+            var pct=totalKg>0?((ctx.raw/totalKg)*100).toFixed(0):0;
+            return ' '+ctx.label+': '+ctx.raw+' kg ('+pct+'%)';
+          }}}
+        }
+      }
+    });
+    const leg=document.getElementById('ins-donut-legend');
+    if(leg) leg.innerHTML=[['⚡ Electricity',elecKg,'var(--rose)'],['🔥 LPG',lpgKg,'var(--orange)'],['⛽ Transport',fuelKg,'var(--amber)'],['🛒 Grocery',grocKg,'var(--sky)']].map(([l,v,c])=>`<span style="font-size:11px;color:${c};font-weight:700">${l}: ${v}kg</span>`).join('');
+  }
+
+  // ── CHART 2: Monthly trend (simulated 6 months) ──
+  const monthCtx=document.getElementById('ins-monthly');
+  if(monthCtx){
+    if(insCharts.monthly) insCharts.monthly.destroy();
+    const months=['Nov','Dec','Jan','Feb','Mar',new Date().toLocaleString('en-IN',{month:'short'})];
+    const base=totalKg;
+    const trend=[base*1.3,base*1.2,base*1.15,base*1.05,base*1.0,base].map(v=>+v.toFixed(1));
+    const target=new Array(6).fill(+(totalKg*0.7).toFixed(1));
+    const scaleOpts = function(showGrid){return {x:{ticks:{color:'rgba(134,239,172,0.5)',font:{size:10}},grid:{display:showGrid,color:'rgba(52,211,100,0.05)'}},y:{ticks:{color:'rgba(134,239,172,0.5)',font:{size:10},callback:function(v){return v+' kg';}},grid:{color:'rgba(52,211,100,0.06)'}}};};
+    const legOpts = {labels:{color:'rgba(134,239,172,0.7)',font:{size:10}}};
+    insCharts.monthly=new Chart(monthCtx,{
+      type:'line',
+      data:{labels:months,datasets:[
+        {label:'Your CO₂',data:trend,borderColor:'rgba(52,211,100,0.9)',backgroundColor:'rgba(52,211,100,0.08)',borderWidth:2,fill:true,tension:0.4,pointBackgroundColor:'rgba(52,211,100,1)',pointRadius:4},
+        {label:'Target',data:target,borderColor:'rgba(251,191,36,0.7)',borderWidth:2,borderDash:[5,5],fill:false,tension:0,pointRadius:0}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:legOpts},scales:scaleOpts(true)}
+    });
+  }
+
+  // ── CHART 3: Category bars vs average ──
+  const barCtx=document.getElementById('ins-bar');
+  if(barCtx){
+    if(insCharts.bar) insCharts.bar.destroy();
+    const scaleOpts2 = {x:{ticks:{color:'rgba(134,239,172,0.5)',font:{size:10}},grid:{display:false}},y:{ticks:{color:'rgba(134,239,172,0.5)',font:{size:10},callback:function(v){return v+' kg';}},grid:{color:'rgba(52,211,100,0.06)'}}};
+    const legOpts2 = {labels:{color:'rgba(134,239,172,0.7)',font:{size:10}}};
+    insCharts.bar=new Chart(barCtx,{
+      type:'bar',
+      data:{
+        labels:['Electricity','LPG','Transport','Grocery'],
+        datasets:[
+          {label:'Your usage',data:[elecKg,lpgKg,fuelKg,grocKg],backgroundColor:['rgba(244,63,94,0.7)','rgba(249,115,22,0.7)','rgba(251,191,36,0.7)','rgba(56,189,248,0.7)'],borderRadius:6},
+          {label:'Avg household',data:[84,42,18.4,7.5],backgroundColor:'rgba(255,255,255,0.08)',borderRadius:6}
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:legOpts2},scales:scaleOpts2}
+    });
+  }
+
+  // ── CHART 4: This month vs last (weekly) ──
+  const cmpCtx=document.getElementById('ins-compare');
+  if(cmpCtx){
+    if(insCharts.compare) insCharts.compare.destroy();
+    const wk=+(totalKg/4).toFixed(1);
+    const scaleOpts3 = {x:{ticks:{color:'rgba(134,239,172,0.5)',font:{size:10}},grid:{display:false}},y:{ticks:{color:'rgba(134,239,172,0.5)',font:{size:10},callback:function(v){return v+' kg';}},grid:{color:'rgba(52,211,100,0.06)'}}};
+    const legOpts3 = {labels:{color:'rgba(134,239,172,0.7)',font:{size:10}}};
+    insCharts.compare=new Chart(cmpCtx,{
+      type:'bar',
+      data:{
+        labels:['Week 1','Week 2','Week 3','Week 4'],
+        datasets:[
+          {label:'This month',data:[+(wk*1.1).toFixed(1),+(wk*0.95).toFixed(1),+(wk*1.05).toFixed(1),+(wk*0.9).toFixed(1)],backgroundColor:'rgba(52,211,100,0.7)',borderRadius:6},
+          {label:'Last month',data:[+(wk*1.3).toFixed(1),+(wk*1.2).toFixed(1),+(wk*1.15).toFixed(1),+(wk*1.1).toFixed(1)],backgroundColor:'rgba(255,255,255,0.1)',borderRadius:6}
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:legOpts3},scales:scaleOpts3}
+    });
+  }
 }
 
 // ═══ MEMBERS ═══
@@ -1559,6 +1872,18 @@ function autoFill(id){const qr=APP.qrCards.find(q=>q.id===id);if(!qr)return;cons
 function simUpload(){
   const inp = document.getElementById('bill-upload-input');
   if(inp) inp.click();
+}
+function simUpload2(id){
+  // Set the current scan category then trigger file picker
+  APP.currentScanCat = id;
+  const inp = document.getElementById('bill-upload-input');
+  if(inp){ inp.click(); } else {
+    // fallback: create temporary input
+    const tmp = document.createElement('input');
+    tmp.type='file'; tmp.accept='image/*,application/pdf';
+    tmp.onchange = e => ocrBillUpload(e.target.files[0]);
+    tmp.click();
+  }
 }
 
 function showResult(icon,title,data){
