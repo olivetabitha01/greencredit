@@ -1383,31 +1383,45 @@ function otpNext(el,i){if(el.value.length===1&&i<5)document.querySelectorAll('.o
 function loadHouse(idx){
   APP.currentHouse=idx;const h=APP.houses[idx];APP.balance=h.credits;
   ['nav-hid','dash-hid','db-hid2','mem-hid','veh-hid','track-hid','qr-hid','cr-hid','map-hid'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=h.id});
-  document.getElementById('cr-bal').textContent=h.credits.toFixed(1);
-  const dm=document.getElementById('dash-members');if(dm)dm.textContent=h.members+' members';
-  const dv=document.getElementById('dash-vehs');if(dv)dv.textContent=APP.vehicles.length+' vehicles';
+  const crEl=document.getElementById('cr-bal');if(crEl)crEl.textContent=h.credits.toFixed(1);
+  const dm=document.getElementById('dash-members');if(dm)dm.textContent=(h.memberList?h.memberList.length:h.members)+' members';
+  const dv=document.getElementById('dash-vehs');
+  if(dv){const green=APP.vehicles.filter(v=>v.fuel==='ev'||v.fuel==='cng').length;dv.textContent=APP.vehicles.length+' vehicle'+(APP.vehicles.length!==1?'s':'')+(green>0?' · '+green+' green':'');}
   renderHousePanel();renderMembersList();renderVehiclesPage();renderMapVehicles();renderQRGrid();
   
   // ── REALTIME LISTENER ──
   const today = new Date().toISOString().split('T')[0];
   const houseId = APP.houses[idx].id;
-  if (window.houseListener) window.houseListener();
+  if (window.houseListener) { try{window.houseListener();}catch(e){} }
   window.houseListener = db.collection('houses').doc(houseId)
     .collection('daily_data').doc(today)
     .onSnapshot(snap => {
-      if (snap.exists) {
+      if (snap && snap.exists) {
         const d = snap.data();
-        const eEl = document.getElementById('kpi-e');
-        const cEl = document.getElementById('kpi-c');
-        const crEl = document.getElementById('cr-bal');
-        if (eEl) eEl.textContent = (d.emission_kg || 0).toFixed(1);
-        if (cEl) cEl.textContent = (d.net_carbon_kg || 0).toFixed(1);
-        if (crEl) crEl.textContent = (d.credits_earned || 0).toFixed(1);
-        APP.houses[idx].credits = d.credits_earned || 0;
-        APP.houses[idx].netCarbon = d.net_carbon_kg || 0;
+        // Update all 4 KPI cards
+        const eEl=document.getElementById('kpi-e'); if(eEl)eEl.textContent=(d.emission_kg||0).toFixed(1);
+        const rEl=document.getElementById('kpi-r'); if(rEl)rEl.textContent=(d.solar_reduction_kg||0).toFixed(1);
+        const oEl=document.getElementById('kpi-o'); if(oEl)oEl.textContent=(d.offset_kg||0).toFixed(1);
+        const nEl=document.getElementById('kpi-n'); if(nEl)nEl.textContent=(d.net_carbon_kg||0).toFixed(1);
+        const crEl2=document.getElementById('cr-bal'); if(crEl2)crEl2.textContent=(d.credits_earned||0).toFixed(1);
+        // Update APP state
+        APP.houses[idx].credits    = d.credits_earned  || 0;
+        APP.houses[idx].netCarbon  = d.net_carbon_kg   || 0;
+        APP.houses[idx].emission   = d.emission_kg     || 0;
+        APP.houses[idx].solarKwh   = d.solar_kwh       || 0;
+        APP.houses[idx].plantCount = d.plant_count     || 0;
+        APP.balance = d.credits_earned || 0;
+        // Update chip labels
+        const nChip=document.querySelector('#kpi-n .kpi-chip');
+        if(nChip)nChip.textContent='💰 Credits: +'+(d.credits_earned||0).toFixed(1);
+        const rChip=document.querySelector('#kpi-r .kpi-chip');
+        if(rChip)rChip.textContent='☀️ '+(d.solar_kwh||0)+' kWh';
+        const oChip=document.querySelector('#kpi-o .kpi-chip');
+        if(oChip)oChip.textContent='🌿 '+(d.plant_count||0)+' plants';
+        // Re-render emission list
+        renderEmiList();
       }
     });
-
 }
 function toggleHousePanel(){document.getElementById('house-panel').classList.toggle('open')}
 document.addEventListener('click',e=>{const p=document.getElementById('house-panel');if(p.classList.contains('open')&&!p.contains(e.target)&&!e.target.closest('.house-switcher'))p.classList.remove('open')});
@@ -1732,41 +1746,50 @@ async function saveVehicleRow(id){
   const row = document.getElementById('vr-'+id);
   if(!row) return;
   const inputs = row.querySelectorAll('input,select');
-  const plate = inputs[0]?.value || 'UNKNOWN';
+  const plate = (inputs[0]?.value || '').toUpperCase().trim();
   const typeRaw = inputs[1]?.value || '';
   const fuelRaw = inputs[2]?.value || '';
-  const mileage = inputs[3]?.value || '40';
+  const mileage = parseInt(inputs[3]?.value) || 40;
+  if(!plate){toast('⚠️','Enter a number plate first');return;}
   const vtype = typeRaw.includes('Two') ? '2w' : '4w';
   const fuel = fuelRaw.includes('Diesel') ? 'diesel' : fuelRaw.includes('Electric') ? 'ev' : fuelRaw.includes('CNG') ? 'cng' : 'petrol';
   const house = APP.houses[APP.currentHouse];
 
-  // Visual feedback immediately
+  // Add to APP.vehicles array immediately
+  const existing = APP.vehicles.findIndex(v=>v.plate===plate);
+  const vObj = {plate, type:vtype, fuel, mileage, owner:APP.phone, gps:true, lat:house.lat||13.04, lng:house.lng||80.23, status:'parked'};
+  if(existing>=0) APP.vehicles[existing]=vObj; else APP.vehicles.push(vObj);
+
+  // Update fleet counters
+  const fleetKey = vtype+'-'+(fuel==='ev'||fuel==='cng'?'ev':'petrol');
+  APP.fleet[fleetKey] = (APP.fleet[fleetKey]||0)+1;
+  updateFleetSummary();
+
+  // Update dashboard vehicle count label immediately
+  const dv=document.getElementById('dash-vehs');
+  if(dv){const g=APP.vehicles.filter(v=>v.fuel==='ev'||v.fuel==='cng').length;dv.textContent=APP.vehicles.length+' vehicle'+(APP.vehicles.length!==1?'s':'')+(g>0?' · '+g+' green':'');}
+
+  // Visual feedback
   row.style.borderColor = 'rgba(52,211,100,0.4)';
   row.style.background = 'rgba(52,211,100,0.03)';
   const btn = row.querySelector('.btn-sm');
   if(btn){ btn.textContent = '✅ Saved!'; btn.disabled = true; }
 
+  // Refresh registered vehicles list
+  renderVehiclesPage();
+
   // Save to Firestore
   try {
     await db.collection('houses').doc(house.id).collection('vehicles').doc(plate.replace(/\s/g,'')).set({
-      plate, type: vtype, fuel, mileage: parseInt(mileage),
-      owner_phone: APP.phone, gps_enabled: true, status: 'active',
+      plate, type: vtype, fuel, mileage,
+      owner_phone: APP.phone, gps_enabled: true, status: 'parked',
+      lat: house.lat||13.04, lng: house.lng||80.23,
       added_at: firebase.firestore.FieldValue.serverTimestamp()
     });
-    toast('✅', `${plate} saved to Firebase!`);
+    toast('✅', plate+' saved! Vehicle count updated.');
   } catch(e) {
-    toast('✅', `${plate} saved locally!`);
+    toast('✅', plate+' saved locally — '+APP.vehicles.length+' vehicles total');
   }
-
-  // Show success card and redirect to dashboard after 1.5s
-  row.innerHTML = `<div style="padding:14px;text-align:center">
-    <div style="font-size:24px;margin-bottom:6px">✅</div>
-    <div style="font-weight:800;color:var(--emerald);font-size:15px">${plate} Registered!</div>
-    <div style="font-size:12px;color:var(--muted);margin-top:4px">${vtype==='4w'?'Four-Wheeler':'Two-Wheeler'} · ${fuel.toUpperCase()} · ${mileage} km/L</div>
-    <div style="font-size:11px;color:var(--muted);margin-top:6px">Redirecting to dashboard...</div>
-  </div>`;
-
-  setTimeout(() => { goto('dashboard'); }, 1500);
 }
 function renderVehiclesPage(){
   renderMapVehicles();
@@ -1778,14 +1801,14 @@ function renderVehiclesPage(){
         <div class="veh-plate-display">${v.plate}</div>
         <span style="font-size:18px">${v.type==='4w'?'🚗':'🏍️'}</span>
       </div>
-      <div class="veh-detail">${v.type==='4w'?'Four-Wheeler':'Two-Wheeler'} · ${v.fuel.toUpperCase()} · ${v.mileage>0?v.mileage+' km/L':'Electric'}</div>
-      <div class="veh-detail">Owner: ${APP.houses[APP.currentHouse].memberList.find(m=>m.phone===v.owner)?.name||v.owner}</div>
+      <div class="veh-detail">${v.type==='4w'?'Four-Wheeler':'Two-Wheeler'} · ${(v.fuel||'petrol').toUpperCase()} · ${v.mileage>0?v.mileage+' km/L':'Electric'}</div>
+      <div class="veh-detail">Owner: ${APP.houses[APP.currentHouse].memberList.find(m=>m.phone===v.owner)?.name||v.owner||'—'}</div>
       <div>
-        <span class="veh-gps-tag">📍 ${v.lat.toFixed(4)}°N, ${v.lng.toFixed(4)}°E</span>
+        <span class="veh-gps-tag">📍 ${v.lat?(v.lat.toFixed(4)+'°N, '+v.lng.toFixed(4)+'°E'):'GPS pending'}</span>
         <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;margin-left:6px;${v.status==='active'?'background:rgba(52,211,100,0.12);color:var(--emerald)':'background:rgba(251,191,36,0.12);color:var(--amber)'}">${v.status==='active'?'🟢 Moving':'🟡 Parked'}</span>
-        <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;margin-left:6px;${v.fuel==='ev'||v.fuel==='cng'?'background:rgba(52,211,100,0.12);color:var(--emerald)':'background:rgba(244,63,94,0.12);color:var(--rose)'}"> ${v.fuel==='ev'||v.fuel==='cng'?'✅ Green':'⚠️ Emission'}</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;margin-left:6px;${v.fuel==='ev'||v.fuel==='cng'?'background:rgba(52,211,100,0.12);color:var(--emerald)':'background:rgba(244,63,94,0.12);color:var(--rose)'}">${v.fuel==='ev'||v.fuel==='cng'?'✅ Green':'⚠️ Emission'}</span>
       </div>
-    </div>`).join('');
+    </div>`).join('')||'<div style="color:var(--muted);font-size:13px;padding:12px">No vehicles registered yet. Add vehicles above.</div>';
 }
 
 // ═══ MAP ═══
@@ -1813,16 +1836,16 @@ function renderMapVehicles(){
         <div style="font-family:'Cabinet Grotesk',sans-serif;font-size:14px;font-weight:800;color:var(--amber)">${v.plate}</div>
         <span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;${v.status==='active'?'background:rgba(52,211,100,0.12);color:var(--emerald)':'background:rgba(251,191,36,0.12);color:var(--amber)'}">${v.status==='active'?'🟢 Moving':'🟡 Parked'}</span>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:3px">📍 ${v.lat.toFixed(4)}°N, ${v.lng.toFixed(4)}°E</div>
-      <div style="font-size:11px;color:var(--muted);">${v.fuel.toUpperCase()} · ${v.type==='4w'?'4-Wheeler':'2-Wheeler'}</div>
-    </div>`).join('');
+      <div style="font-size:11px;color:var(--muted);margin-top:3px">📍 ${v.lat?(v.lat.toFixed(4)+'°N, '+v.lng.toFixed(4)+'°E'):'GPS not set'}</div>
+      <div style="font-size:11px;color:var(--muted);">${(v.fuel||'petrol').toUpperCase()} · ${v.type==='4w'?'4-Wheeler':'2-Wheeler'}</div>
+    </div>`).join('')||'<div style="color:var(--muted);font-size:12px">No vehicles yet</div>';
   const m1=document.getElementById('map-veh1');const m2=document.getElementById('map-veh2');
   if(m1)m1.style.display=APP.vehicles.length>0?'flex':'none';
   if(m2)m2.style.display=APP.vehicles.length>1?'flex':'none';
   const gps=document.getElementById('map-gps');const h=APP.houses[APP.currentHouse];
-  if(gps)gps.textContent=h.lat+'°N, '+h.lng+'°E';
-  const mc=document.getElementById('map-mem');if(mc)mc.textContent=h.members;
-  const mc2=document.getElementById('map-city');if(mc2)mc2.textContent=h.city;
+  if(gps&&h)gps.textContent=(h.lat||'?')+'°N, '+(h.lng||'?')+'°E';
+  const mc=document.getElementById('map-mem');if(mc&&h)mc.textContent=h.memberList?h.memberList.length:h.members;
+  const mc2=document.getElementById('map-city');if(mc2&&h)mc2.textContent=h.city||h.addr;
 }
 function refreshGPS(){
   const gpsEl = document.getElementById('map-gps');
@@ -2143,12 +2166,18 @@ function calcAll(){
   db.collection('houses').doc(house.id)
     .collection('daily_data').doc(today)
     .set({
-      electricity_kwh: parseFloat(document.getElementById('v-elec').value || 0),
-      solar_kwh: parseFloat(document.getElementById('v-solar').value || 0),
+      electricity_kwh: parseFloat(document.getElementById('v-elec').textContent || 0),
+      solar_kwh: parseFloat(document.getElementById('v-solar').textContent || 0),
       lpg_cylinders: parseInt(document.getElementById('v-lpg').textContent || 0),
-      fuel_litres: parseFloat(document.getElementById('v-fuel').value || 0),
+      fuel_litres: parseFloat(document.getElementById('v-fuel').textContent || 0),
+      fuel_type: APP.fuel,
+      grocery_amount: parseFloat(document.getElementById('v-grocery').value || 0),
+      grocery_category: APP.groceryCat,
+      plant_count: parseInt(document.getElementById('v-plants').textContent || 0),
+      plant_type: APP.plantType,
       emission_kg: emission,
       solar_reduction_kg: reduction,
+      offset_kg: offset,
       net_carbon_kg: net,
       credits_earned: credits,
       updated_by: APP.phone,
@@ -2158,7 +2187,22 @@ function calcAll(){
     .catch(err => console.error('Save failed:', err));
 
 }
-function saveToDash(){APP.balance+=1.2;document.getElementById('cr-bal').textContent=APP.balance.toFixed(1);document.getElementById('result-panel').style.display='none';toast('✅','Saved to Firebase! Dashboard updated.');goto('dashboard')}
+function saveToDash(){
+  // Update APP balance from calculated credits
+  const net = parseFloat(document.getElementById('r-n').textContent) || 0;
+  const credits = parseFloat(document.getElementById('r-n').parentElement?.nextElementSibling?.querySelector('#r-n')?.textContent) || Math.max(0, APP.baseline - net);
+  APP.balance = credits;
+  const crEl = document.getElementById('cr-bal');
+  if(crEl) crEl.textContent = APP.balance.toFixed(1);
+  // Update KPI cards
+  const kpiE = document.getElementById('kpi-e');
+  const kpiN = document.getElementById('kpi-n');
+  if(kpiE) kpiE.textContent = document.getElementById('r-e').textContent;
+  if(kpiN) kpiN.textContent = document.getElementById('r-n').textContent;
+  document.getElementById('result-panel').style.display='none';
+  toast('✅','Saved to Firebase! Dashboard updated.');
+  goto('dashboard');
+}
 
 // ═══ CHARTS ═══
 let DC={},AC={};
@@ -2389,7 +2433,8 @@ function startSmartHomeListener() {
   }
 }
 
-const t=document.getElementById('toast');document.getElementById('t-icon').textContent=icon;document.getElementById('t-msg').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500)
+// ═══ TOAST ═══
+function toast(icon,msg){const t=document.getElementById('toast');document.getElementById('t-icon').textContent=icon;document.getElementById('t-msg').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500)}
 
 // ═══ INIT ═══
 document.addEventListener('DOMContentLoaded',()=>{
