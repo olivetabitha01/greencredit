@@ -8,6 +8,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Satoshi:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -275,10 +276,65 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
-@media(max-width:768px){
-  .kpi-row,.g3,.g4,.fleet-grid,.veh-input-grid{grid-template-columns:1fr 1fr}
-  .g2,.qr-master-grid,.redeem-grid{grid-template-columns:1fr}
-  .nav-tabs{display:none}.content{padding:14px}
+@keyframes popIn{0%{opacity:0;transform:translateY(30px) scale(.95)}60%{transform:translateY(-6px) scale(1.02)}100%{opacity:1;transform:translateY(0) scale(1)}}
+
+/* ── WIFI POPUP ── */
+.wifi-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:999;background:var(--card);border:1.5px solid rgba(52,211,100,0.5);border-radius:24px;padding:32px 36px;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,0.6);display:none;min-width:260px}
+.wifi-popup.show{display:block;animation:popIn .45s ease forwards}
+.wifi-popup-icon{font-size:48px;margin-bottom:12px}
+.wifi-popup-title{font-family:'Cabinet Grotesk',sans-serif;font-size:20px;font-weight:900;color:var(--emerald);margin-bottom:6px}
+.wifi-popup-sub{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:18px}
+.wifi-popup-close{padding:10px 28px;background:linear-gradient(135deg,#1e6b37,var(--emerald));border:none;border-radius:11px;color:#000;font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:900;cursor:pointer}
+.wifi-popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:998;display:none}
+.wifi-popup-overlay.show{display:block}
+
+/* ── LAYOUT FIXES ── */
+/* Make all grids collapse properly on small screens */
+@media(max-width:900px){
+  .g3{grid-template-columns:1fr 1fr}
+  .g4,.kpi-row{grid-template-columns:1fr 1fr}
+}
+@media(max-width:600px){
+  .g2,.g3,.g4,.kpi-row,.fleet-grid,.veh-input-grid,.qr-master-grid,.redeem-grid{grid-template-columns:1fr}
+  .nav-tabs{display:none}
+  .content{padding:14px 12px}
+  .card{padding:16px}
+  .kpi{padding:16px}
+  .kpi-num{font-size:28px}
+  .section-title{font-size:18px}
+  .login-card{padding:32px 22px}
+}
+
+/* Fix tab-row overflow on mobile */
+.tab-row{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;scrollbar-width:none}
+.tab-row::-webkit-scrollbar{display:none}
+
+/* Fix member rows */
+.member-row{flex-wrap:wrap}
+.member-info{min-width:0;flex:1}
+.member-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Fix vehicle cards */
+.veh-input-grid{gap:10px}
+
+/* Fix QR grid */
+.qr-card{display:flex;flex-direction:column;align-items:center;text-align:center}
+
+/* Fix map container height on mobile */
+@media(max-width:600px){
+  .map-container{height:250px!important}
+  .sim-phones{grid-template-columns:1fr}
+}
+
+/* Fix bottom mobile nav */
+.mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;background:var(--card);border-top:1px solid var(--border);padding:8px 4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.mobile-nav::-webkit-scrollbar{display:none}
+.mob-tab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 10px;border-radius:10px;font-size:9px;font-weight:700;color:var(--muted);cursor:pointer;border:none;background:none;white-space:nowrap;flex-shrink:0}
+.mob-tab.active{color:var(--emerald);background:rgba(52,211,100,0.1)}
+.mob-tab-icon{font-size:18px}
+@media(max-width:600px){
+  .mobile-nav{display:flex}
+  .page-body{padding-bottom:70px}
 }
 </style>
 </head>
@@ -1229,58 +1285,96 @@ onValue(ref(rtdb,<span class="val">`gps/${houseId}`</span>),(snap)=>{<br>
     <!-- ══ SMART HOME ══ -->
     <div id="sub-smarthome" class="content" style="display:none">
       <div class="section-title">🏠 Smart Home Control</div>
-      <div class="section-sub">Select a house · See connected devices by room · Toggle ON/OFF via ESP32</div>
-
-      <!-- ESP32 Status Bar — TOP -->
-      <div id="sh-status-bar" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:12px 16px;border-radius:14px;border:1px solid rgba(52,211,100,0.25);background:var(--card);margin-bottom:18px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <div id="sh-dot" class="live-dot" style="opacity:0.3"></div>
-          <div>
-            <div style="font-size:12px;font-weight:800;color:var(--text)" id="sh-esp-label">ESP32 — Not Connected</div>
-            <div style="font-size:10px;color:var(--muted)" id="sh-esp-sub">Waiting for device...</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:16px;font-size:11px">
-          <div style="text-align:center"><div style="font-weight:700;color:var(--amber)" id="sh-live-w">—</div><div style="color:var(--muted)">Live Watts</div></div>
-          <div style="text-align:center"><div style="font-weight:700;color:var(--sky)" id="sh-live-v">—</div><div style="color:var(--muted)">Voltage</div></div>
-          <div style="text-align:center"><div style="font-weight:700;color:var(--emerald)" id="sh-live-a">—</div><div style="color:var(--muted)">Current</div></div>
-          <div style="text-align:center"><div style="font-weight:700;color:var(--rose)" id="sh-live-co2">—</div><div style="color:var(--muted)">kg CO₂/hr</div></div>
-        </div>
-        <div style="font-size:10px;color:var(--muted);font-family:monospace" id="sh-last-update">Last update: —</div>
-      </div>
+      <div class="section-sub">ESP32-connected devices · Real-time power monitoring · Remote ON/OFF control</div>
 
       <!-- House Selector -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px">
-        <button id="shb-0" onclick="selectSHHouse(0)" style="padding:14px 10px;border-radius:14px;border:2px solid rgba(52,211,100,0.4);background:rgba(52,211,100,0.1);color:var(--emerald);font-family:'Cabinet Grotesk',sans-serif;font-weight:900;cursor:pointer;font-size:12px;text-align:center;transition:all .2s">
-          🏢 TN-CH-001<br><span style="font-size:10px;font-weight:500;color:var(--muted)">High IoT · 6 devices</span>
+      <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+        <button class="sh-house-btn active" id="shb-0" onclick="selectSHHouse(0)" style="flex:1;min-width:120px;padding:12px;border-radius:14px;border:2px solid rgba(52,211,100,0.4);background:rgba(52,211,100,0.1);color:var(--emerald);font-family:'Cabinet Grotesk',sans-serif;font-weight:900;cursor:pointer;font-size:13px">
+          🏢 TN-CH-001<br><span style="font-size:10px;font-weight:400;color:var(--muted)">High IoT · 6 devices</span>
         </button>
-        <button id="shb-1" onclick="selectSHHouse(1)" style="padding:14px 10px;border-radius:14px;border:2px solid var(--border);background:var(--card);color:var(--text2);font-family:'Cabinet Grotesk',sans-serif;font-weight:900;cursor:pointer;font-size:12px;text-align:center;transition:all .2s">
-          🏠 TN-CB-002<br><span style="font-size:10px;font-weight:500;color:var(--muted)">Medium IoT · 3 devices</span>
+        <button class="sh-house-btn" id="shb-1" onclick="selectSHHouse(1)" style="flex:1;min-width:120px;padding:12px;border-radius:14px;border:2px solid var(--border);background:var(--card);color:var(--text2);font-family:'Cabinet Grotesk',sans-serif;font-weight:900;cursor:pointer;font-size:13px">
+          🏠 TN-CB-002<br><span style="font-size:10px;font-weight:400;color:var(--muted)">Medium IoT · 3 devices</span>
         </button>
-        <button id="shb-2" onclick="selectSHHouse(2)" style="padding:14px 10px;border-radius:14px;border:2px solid var(--border);background:var(--card);color:var(--text2);font-family:'Cabinet Grotesk',sans-serif;font-weight:900;cursor:pointer;font-size:12px;text-align:center;transition:all .2s">
-          🌿 KA-BL-001<br><span style="font-size:10px;font-weight:500;color:var(--muted)">Low IoT · 1 device</span>
+        <button class="sh-house-btn" id="shb-2" onclick="selectSHHouse(2)" style="flex:1;min-width:120px;padding:12px;border-radius:14px;border:2px solid var(--border);background:var(--card);color:var(--text2);font-family:'Cabinet Grotesk',sans-serif;font-weight:900;cursor:pointer;font-size:13px">
+          🌿 KA-BL-001<br><span style="font-size:10px;font-weight:400;color:var(--muted)">Low IoT · 1 device</span>
         </button>
       </div>
 
-      <!-- KPI Row -->
+      <!-- Live Power Summary -->
       <div class="g4" style="margin-bottom:18px">
-        <div class="kpi"><div class="kpi-lbl">Total Power</div><div class="kpi-num" style="color:var(--amber)" id="sh-power">0.0</div><div class="kpi-unit">kW active</div></div>
-        <div class="kpi"><div class="kpi-lbl">Devices ON</div><div class="kpi-num" style="color:var(--emerald)" id="sh-active">0</div><div class="kpi-unit">of <span id="sh-total">6</span></div></div>
-        <div class="kpi"><div class="kpi-lbl">Est. Today</div><div class="kpi-num" style="color:var(--sky)" id="sh-kwh">0.0</div><div class="kpi-unit">kWh</div></div>
-        <div class="kpi"><div class="kpi-lbl">CO₂ Today</div><div class="kpi-num" style="color:var(--rose)" id="sh-co2">0.0</div><div class="kpi-unit">kg CO₂</div></div>
+        <div class="kpi"><div class="kpi-glow" style="background:var(--amber)"></div><div class="kpi-lbl">Live Power</div><div class="kpi-num" style="color:var(--amber)" id="sh-power">0.0</div><div class="kpi-unit">kW total</div></div>
+        <div class="kpi"><div class="kpi-glow" style="background:var(--rose)"></div><div class="kpi-lbl">Active Devices</div><div class="kpi-num" style="color:var(--rose)" id="sh-active">0</div><div class="kpi-unit">of <span id="sh-total">6</span> total</div></div>
+        <div class="kpi"><div class="kpi-glow" style="background:var(--emerald)"></div><div class="kpi-lbl">Today's Usage</div><div class="kpi-num" style="color:var(--emerald)" id="sh-kwh">0.0</div><div class="kpi-unit">kWh</div></div>
+        <div class="kpi"><div class="kpi-glow" style="background:var(--violet)"></div><div class="kpi-lbl">CO₂ Today</div><div class="kpi-num" style="color:var(--violet)" id="sh-co2">0.0</div><div class="kpi-unit">kg CO₂</div></div>
       </div>
 
-      <!-- Room-wise Device View -->
-      <div id="sh-rooms-container"></div>
+      <!-- IoT Live Badge -->
+      <div id="sh-iot-badge" style="display:none;background:linear-gradient(135deg,#0f3320,#1a4a25);border:1px solid rgba(52,211,100,0.4);border-radius:12px;padding:10px 16px;font-size:12px;font-weight:700;color:var(--emerald);margin-bottom:14px;display:flex;align-items:center;gap:10px">
+        <div class="live-dot"></div>
+        <span id="sh-iot-text">⚡ ESP32 Connected — Live data streaming</span>
+      </div>
 
-      <!-- Firebase Path Info -->
-      <div style="margin-top:14px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;font-family:monospace;font-size:11px;color:var(--muted);line-height:1.9">
-        <div style="color:var(--sky);font-weight:700;margin-bottom:4px">📡 Firebase Realtime DB Path (ESP32 writes here):</div>
-        <div id="sh-fb-path">/iot/TN-CH-001/devices/bulb_hall → {state, power_w, voltage_v, current_a}</div>
+      <!-- Device Grid -->
+      <div id="sh-device-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:18px"></div>
+
+      <!-- Room View -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="wt">🏡 Room-wise Breakdown <span id="sh-house-name" class="badge bl">TN-CH-001</span></div>
+        <div id="sh-rooms" style="margin-top:14px;display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+
+      <!-- ESP32 Connection Status -->
+      <div class="card" style="background:rgba(56,189,248,0.04);border-color:rgba(56,189,248,0.18)">
+        <div class="wt" style="color:var(--sky)">📡 ESP32 Connection</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
+          <div style="padding:12px;background:var(--bg2);border-radius:12px">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Firebase Path</div>
+            <div style="font-family:monospace;font-size:11px;color:var(--sky)" id="sh-fb-path">/iot/TN-CH-001/devices</div>
+          </div>
+          <div style="padding:12px;background:var(--bg2);border-radius:12px">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Last Update</div>
+            <div style="font-family:monospace;font-size:11px;color:var(--emerald)" id="sh-last-update">—</div>
+          </div>
+          <div style="padding:12px;background:var(--bg2);border-radius:12px">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">WiFi Signal</div>
+            <div style="font-size:13px;font-weight:700;color:var(--emerald)" id="sh-wifi">📶 Strong</div>
+          </div>
+          <div style="padding:12px;background:var(--bg2);border-radius:12px">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">ESP32 Status</div>
+            <div style="font-size:13px;font-weight:700;color:var(--emerald)" id="sh-esp-status">🟢 Online</div>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding:10px 12px;background:var(--bg2);border-radius:10px;font-size:11px;color:var(--muted);font-family:monospace;line-height:1.8">
+          Firebase.RTDB.setBool(&fbdo, "/iot/TN-CH-001/devices/fan_hall/state", true);<br>
+          Firebase.RTDB.setFloat(&fbdo, "/iot/TN-CH-001/devices/fan_hall/power_w", 65.0);
+        </div>
       </div>
     </div>
 
   </div>
+</div>
+
+<!-- WIFI CONNECTED POPUP -->
+<div class="wifi-popup-overlay" id="wifi-overlay" onclick="closeWifiPopup()"></div>
+<div class="wifi-popup" id="wifi-popup">
+  <div class="wifi-popup-icon">📶</div>
+  <div class="wifi-popup-title">ESP32 Connected!</div>
+  <div class="wifi-popup-sub" id="wifi-popup-msg">Successfully connected to Wi-Fi.<br>Live sensor data is now streaming.</div>
+  <button class="wifi-popup-close" onclick="closeWifiPopup()">Got it ✓</button>
+</div>
+
+<!-- MOBILE BOTTOM NAV -->
+<div class="mobile-nav" id="mobile-nav">
+  <button class="mob-tab active" data-p="dashboard" onclick="goto('dashboard')"><span class="mob-tab-icon">🏠</span>Home</button>
+  <button class="mob-tab" data-p="track" onclick="goto('track')"><span class="mob-tab-icon">⚡</span>Track</button>
+  <button class="mob-tab" data-p="qrcodes" onclick="goto('qrcodes')"><span class="mob-tab-icon">📱</span>Scan</button>
+  <button class="mob-tab" data-p="smarthome" onclick="goto('smarthome')"><span class="mob-tab-icon">🏠</span>Smart</button>
+  <button class="mob-tab" data-p="credits" onclick="goto('credits')"><span class="mob-tab-icon">💰</span>Credits</button>
+  <button class="mob-tab" data-p="members" onclick="goto('members')"><span class="mob-tab-icon">👥</span>Members</button>
+  <button class="mob-tab" data-p="vehicles" onclick="goto('vehicles')"><span class="mob-tab-icon">🚗</span>Vehicles</button>
+  <button class="mob-tab" data-p="map" onclick="goto('map')"><span class="mob-tab-icon">🗺️</span>Map</button>
+  <button class="mob-tab" data-p="house" onclick="goto('house')"><span class="mob-tab-icon">🏡</span>House</button>
+  <button class="mob-tab" data-p="insights" onclick="goto('insights')"><span class="mob-tab-icon">💡</span>Insights</button>
 </div>
 
 <!-- SCANNER MODAL -->
@@ -1418,6 +1512,7 @@ function addNewHouseFlow(){document.getElementById('house-panel').classList.remo
 function goto(p){
   APP.page=p;
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.toggle('active',t.dataset.p===p));
+  document.querySelectorAll('.mob-tab').forEach(t=>t.classList.toggle('active',t.dataset.p===p));
   document.querySelectorAll('[id^="sub-"]').forEach(s=>s.style.display='none');
   document.getElementById('sub-'+p).style.display='block';
   if(p==='dashboard'){initDashCharts();renderEmiList();document.getElementById('dash-date').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})}
@@ -2223,58 +2318,42 @@ function confirmRedeem(){const a=parseFloat(document.getElementById('m-amt').val
 const SH_HOUSES = [
   {
     id: 'TN-CH-001', name: 'T Nagar, Chennai', iotLevel: 'High',
-    rooms: [
-      { name: 'Living Room', icon: '🛋️', devices: [
-        {id:'bulb_hall', name:'Demo Bulb', icon:'💡', type:'bulb', watts:60, state:true, esp32:true},
-        {id:'fan_hall',  name:'Ceiling Fan', icon:'🌀', type:'fan', watts:65, state:true, esp32:false},
-        {id:'tv_hall',   name:'Smart TV',   icon:'📺', type:'tv',  watts:120, state:false, esp32:false},
-      ]},
-      { name: 'Bedroom 1', icon: '🛏️', devices: [
-        {id:'ac_bed1',    name:'Air Conditioner', icon:'❄️', type:'ac',    watts:1500, state:false, esp32:false},
-        {id:'light_bed1', name:'LED Light',       icon:'💡', type:'light', watts:9,    state:true,  esp32:false},
-      ]},
-      { name: 'Kitchen', icon: '🍳', devices: [
-        {id:'fridge', name:'Refrigerator', icon:'🧊', type:'fridge', watts:150, state:true, esp32:false},
-      ]},
+    rooms: ['Living Room', 'Bedroom 1', 'Bedroom 2', 'Kitchen', 'Bathroom'],
+    devices: [
+      {id:'fan_hall', name:'Ceiling Fan', room:'Living Room', icon:'🌀', type:'fan', watts:65, state:true},
+      {id:'ac_bed1', name:'Air Conditioner', room:'Bedroom 1', icon:'❄️', type:'ac', watts:1500, state:false},
+      {id:'light_hall', name:'LED Light', room:'Living Room', icon:'💡', type:'light', watts:12, state:true},
+      {id:'light_bed1', name:'LED Light', room:'Bedroom 1', icon:'💡', type:'light', watts:9, state:true},
+      {id:'tv_hall', name:'Smart TV', room:'Living Room', icon:'📺', type:'tv', watts:120, state:false},
+      {id:'fridge', name:'Refrigerator', room:'Kitchen', icon:'🧊', type:'fridge', watts:150, state:true},
     ]
   },
   {
     id: 'TN-CB-002', name: 'RS Puram, Coimbatore', iotLevel: 'Medium',
-    rooms: [
-      { name: 'Hall', icon: '🛋️', devices: [
-        {id:'fan_hall',   name:'Ceiling Fan', icon:'🌀', type:'fan',   watts:65,  state:true,  esp32:false},
-        {id:'light_hall', name:'LED Light',   icon:'💡', type:'light', watts:12,  state:false, esp32:false},
-      ]},
-      { name: 'Kitchen', icon: '🍳', devices: [
-        {id:'fridge', name:'Refrigerator', icon:'🧊', type:'fridge', watts:150, state:true, esp32:false},
-      ]},
+    rooms: ['Hall', 'Bedroom', 'Kitchen'],
+    devices: [
+      {id:'fan_hall', name:'Ceiling Fan', room:'Hall', icon:'🌀', type:'fan', watts:65, state:true},
+      {id:'light_hall', name:'LED Light', room:'Hall', icon:'💡', type:'light', watts:12, state:false},
+      {id:'fridge', name:'Refrigerator', room:'Kitchen', icon:'🧊', type:'fridge', watts:150, state:true},
     ]
   },
   {
     id: 'KA-BL-001', name: 'Koramangala, Bangalore', iotLevel: 'Low',
-    rooms: [
-      { name: 'Living Room', icon: '🛋️', devices: [
-        {id:'light_main', name:'Smart Light', icon:'💡', type:'light', watts:12, state:true, esp32:false},
-      ]},
+    rooms: ['Living Room', 'Bedroom'],
+    devices: [
+      {id:'light_main', name:'Smart Light', room:'Living Room', icon:'💡', type:'light', watts:12, state:true},
     ]
   }
 ];
-
 let currentSHHouse = 0;
-let shRTDBListener = null;
-
-function allSHDevices(house) {
-  return house.rooms.flatMap(r => r.devices);
-}
+let shListener = null;
 
 function selectSHHouse(idx) {
   currentSHHouse = idx;
-  [0,1,2].forEach(i => {
-    const b = document.getElementById('shb-'+i);
-    if (!b) return;
-    b.style.borderColor = i===idx ? 'rgba(52,211,100,0.45)' : 'var(--border)';
-    b.style.background  = i===idx ? 'rgba(52,211,100,0.1)'  : 'var(--card)';
-    b.style.color       = i===idx ? 'var(--emerald)'        : 'var(--text2)';
+  document.querySelectorAll('.sh-house-btn').forEach((b, i) => {
+    b.style.borderColor = i === idx ? 'rgba(52,211,100,0.4)' : 'var(--border)';
+    b.style.background = i === idx ? 'rgba(52,211,100,0.1)' : 'var(--card)';
+    b.style.color = i === idx ? 'var(--emerald)' : 'var(--text2)';
   });
   renderSmartHome();
   startSmartHomeListener();
@@ -2282,199 +2361,182 @@ function selectSHHouse(idx) {
 
 function renderSmartHome() {
   const house = SH_HOUSES[currentSHHouse];
-  if (!house) return;
-
-  // Update Firebase path display
+  const grid = document.getElementById('sh-device-grid');
+  const roomsEl = document.getElementById('sh-rooms');
+  const nameEl = document.getElementById('sh-house-name');
   const pathEl = document.getElementById('sh-fb-path');
-  if (pathEl) pathEl.textContent = `/iot/${house.id}/devices/bulb_hall → {state, power_w, voltage_v, current_a}`;
+  if (!grid || !house) return;
 
+  if (nameEl) nameEl.textContent = house.id;
+  if (pathEl) pathEl.textContent = `/iot/${house.id}/devices`;
+
+  // Update KPIs
   updateSHKPIs(house);
 
-  // Render rooms
-  const container = document.getElementById('sh-rooms-container');
-  if (!container) return;
-
-  container.innerHTML = house.rooms.map(room => `
-    <div style="margin-bottom:16px">
-      <!-- Room Header -->
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
-        <span style="font-size:18px">${room.icon}</span>
-        <span style="font-family:'Cabinet Grotesk',sans-serif;font-size:15px;font-weight:900;color:var(--text)">${room.name}</span>
-        <span style="font-size:11px;color:var(--muted);margin-left:4px">${room.devices.length} device${room.devices.length!==1?'s':''}</span>
-        <span style="margin-left:auto;font-size:11px;font-weight:700;color:var(--amber)">${room.devices.filter(d=>d.state).reduce((s,d)=>s+d.watts,0)}W</span>
+  // Render device cards
+  grid.innerHTML = house.devices.map(d => `
+    <div style="background:var(--card);border:2px solid ${d.state ? 'rgba(52,211,100,0.35)' : 'var(--border)'};border-radius:18px;padding:18px;transition:all .3s" id="sh-card-${d.id}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:28px">${d.icon}</div>
+        <div class="tog ${d.state ? 'on' : ''}" id="sh-tog-${d.id}" onclick="toggleDevice('${d.id}',${currentSHHouse})"></div>
       </div>
-      <!-- Device Cards -->
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
-        ${room.devices.map(d => `
-          <div id="sh-card-${d.id}" style="background:var(--card);border:2px solid ${d.state?'rgba(52,211,100,0.35)':'var(--border)'};border-radius:16px;padding:14px;transition:all .25s;position:relative">
-            ${d.esp32 ? `<div style="position:absolute;top:8px;right:8px;font-size:9px;font-weight:700;color:var(--emerald);background:rgba(52,211,100,0.12);padding:2px 6px;border-radius:8px">ESP32</div>` : ''}
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-              <span style="font-size:26px">${d.icon}</span>
-              <div class="tog ${d.state?'on':''}" id="sh-tog-${d.id}" onclick="toggleSHDevice('${house.id}','${room.name}','${d.id}')"></div>
-            </div>
-            <div style="font-size:12px;font-weight:800;color:var(--text);margin-bottom:2px">${d.name}</div>
-            <div style="font-size:11px;font-weight:700;color:${d.state?'var(--amber)':'var(--muted)'};margin-bottom:2px">${d.state?d.watts+'W':'OFF'}</div>
-            <div style="font-size:10px;color:var(--muted)">${d.state?(d.watts*0.7/1000*24).toFixed(2)+' kg CO₂/day':'—'}</div>
-            ${d.esp32 ? `<div id="sh-live-bar-${d.id}" style="margin-top:8px;padding:4px 8px;background:rgba(52,211,100,0.06);border-radius:6px;font-size:10px;color:var(--emerald);font-family:monospace">Live: waiting...</div>` : ''}
-          </div>`).join('')}
+      <div style="font-family:'Cabinet Grotesk',sans-serif;font-size:14px;font-weight:800;color:var(--text);margin-bottom:2px">${d.name}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px">📍 ${d.room}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-family:'Cabinet Grotesk',sans-serif;font-size:16px;font-weight:900;color:${d.state ? 'var(--amber)' : 'var(--muted)'}">${d.state ? d.watts + 'W' : '0W'}</div>
+          <div style="font-size:10px;color:var(--muted)">${d.state ? (d.watts * 0.7 / 1000).toFixed(3) + ' kg CO₂/hr' : 'OFF'}</div>
+        </div>
+        <div style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;${d.state ? 'background:rgba(52,211,100,0.15);color:var(--emerald)' : 'background:var(--bg2);color:var(--muted)'}">
+          ${d.state ? '🟢 ON' : '⚫ OFF'}
+        </div>
       </div>
     </div>`).join('');
+
+  // Render room breakdown
+  const roomMap = {};
+  house.devices.forEach(d => {
+    if (!roomMap[d.room]) roomMap[d.room] = {devices:[], totalW:0};
+    roomMap[d.room].devices.push(d);
+    if (d.state) roomMap[d.room].totalW += d.watts;
+  });
+
+  roomsEl.innerHTML = Object.entries(roomMap).map(([room, data]) => {
+    const activeCount = data.devices.filter(d => d.state).length;
+    return `
+    <div style="display:flex;align-items:center;gap:14px;padding:12px;background:var(--bg2);border-radius:12px;border:1px solid var(--border)">
+      <div style="font-size:20px">${room.includes('Bed')?'🛏️':room.includes('Kitchen')?'🍳':room.includes('Bath')?'🚿':'🛋️'}</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700;color:var(--text)">${room}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${data.devices.length} device${data.devices.length!==1?'s':''} · ${activeCount} active</div>
+        <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+          ${data.devices.map(d => `<span style="font-size:10px;padding:2px 8px;border-radius:10px;${d.state?'background:rgba(52,211,100,0.12);color:var(--emerald)':'background:var(--bg);color:var(--muted)'}">${d.icon} ${d.name}</span>`).join('')}
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:'Cabinet Grotesk',sans-serif;font-size:16px;font-weight:900;color:var(--amber)">${data.totalW}W</div>
+        <div style="font-size:10px;color:var(--muted)">${(data.totalW * 0.7/1000).toFixed(3)} kg/hr</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
-function toggleSHDevice(houseId, roomName, deviceId) {
-  const house = SH_HOUSES.find(h => h.id === houseId);
-  if (!house) return;
-  const room = house.rooms.find(r => r.name === roomName);
-  if (!room) return;
-  const device = room.devices.find(d => d.id === deviceId);
+function updateSHKPIs(house) {
+  const activeDevices = house.devices.filter(d => d.state);
+  const totalW = activeDevices.reduce((sum, d) => sum + d.watts, 0);
+  const totalKw = (totalW / 1000).toFixed(2);
+  const kwh = (totalKw * 8).toFixed(1); // simulate 8hr usage
+  const co2 = (kwh * 0.7).toFixed(2);
+
+  const sp = document.getElementById('sh-power');
+  const sa = document.getElementById('sh-active');
+  const st = document.getElementById('sh-total');
+  const sk = document.getElementById('sh-kwh');
+  const sc = document.getElementById('sh-co2');
+  const sl = document.getElementById('sh-last-update');
+
+  if(sp) sp.textContent = totalKw;
+  if(sa) sa.textContent = activeDevices.length;
+  if(st) st.textContent = house.devices.length;
+  if(sk) sk.textContent = kwh;
+  if(sc) sc.textContent = co2;
+  if(sl) sl.textContent = new Date().toLocaleTimeString();
+}
+
+function toggleDevice(deviceId, houseIdx) {
+  const house = SH_HOUSES[houseIdx];
+  const device = house.devices.find(d => d.id === deviceId);
   if (!device) return;
 
   device.state = !device.state;
 
-  // Update card border
+  // Update toggle visual
+  const tog = document.getElementById('sh-tog-' + deviceId);
   const card = document.getElementById('sh-card-' + deviceId);
-  const tog  = document.getElementById('sh-tog-'  + deviceId);
-  if (card) card.style.borderColor = device.state ? 'rgba(52,211,100,0.35)' : 'var(--border)';
-  if (tog)  tog.classList.toggle('on', device.state);
+  if (tog) tog.classList.toggle('on', device.state);
+  if (card) {
+    card.style.borderColor = device.state ? 'rgba(52,211,100,0.35)' : 'var(--border)';
+  }
 
   updateSHKPIs(house);
-  renderSmartHome();
+  toast(device.state ? '🟢' : '⚫', `${device.name} turned ${device.state ? 'ON' : 'OFF'} · ${device.state ? device.watts + 'W' : '0W'}`);
 
-  toast(device.state ? '🟢' : '⚫',
-    `${device.name} ${device.state ? 'ON · '+device.watts+'W' : 'OFF'}`);
-
-  // Write to Firebase RTDB (ESP32 relay)
+  // Send to Firebase Realtime DB if available
   if (typeof rtdb !== 'undefined') {
-    rtdb.ref(`/iot/${houseId}/devices/${deviceId}`).update({
-      state: device.state,
-      power_w: device.state ? device.watts : 0,
-      cmd_at: Date.now()
-    });
+    try {
+      rtdb.ref(`/iot/${house.id}/devices/${deviceId}`).set({
+        state: device.state,
+        power_w: device.state ? device.watts : 0,
+        updated_at: Date.now()
+      });
+    } catch(e) {}
+  } else {
+    // Simulate Firebase command even without RTDB
+    console.log(`Firebase: /iot/${house.id}/devices/${deviceId}/state = ${device.state}`);
   }
-}
 
-function updateSHKPIs(house) {
-  const devices = allSHDevices(house);
-  const on = devices.filter(d => d.state);
-  const totalW = on.reduce((s,d) => s+d.watts, 0);
-  const kw = (totalW/1000).toFixed(2);
-  const kwh = (totalW/1000 * 8).toFixed(1);
-  const co2 = (kwh * 0.7).toFixed(2);
-
-  const set = (id, val) => { const e = document.getElementById(id); if(e) e.textContent = val; };
-  set('sh-power',  kw);
-  set('sh-active', on.length);
-  set('sh-total',  devices.length);
-  set('sh-kwh',    kwh);
-  set('sh-co2',    co2);
+  // Re-render just the card
+  renderSmartHome();
 }
 
 function startSmartHomeListener() {
   const house = SH_HOUSES[currentSHHouse];
   if (!house) return;
 
-  // Detach old listener
-  if (shRTDBListener) {
-    try { shRTDBListener.off(); } catch(e) {}
-    shRTDBListener = null;
-  }
+  if (typeof rtdb !== 'undefined') {
+    if (shListener) { try { shListener.off(); } catch(e) {} }
+    let firstConnect = true;
+    shListener = rtdb.ref(`/iot/${house.id}/devices`);
+    shListener.on('value', (snap) => {
+      const data = snap.val();
+      if (!data) return;
 
-  if (typeof rtdb === 'undefined') {
-    // Demo mode — simulate bulb data updating every 3 sec
-    simulateBulbData(house.id);
-    return;
-  }
+      // Show WiFi popup only on first real connection
+      if (firstConnect && !_wifiPopupShown) {
+        firstConnect = false;
+        showWifiPopup('ESP32 Module', house.id);
+      } else {
+        firstConnect = false;
+      }
 
-  // Real RTDB listener
-  shRTDBListener = rtdb.ref(`/iot/${house.id}/devices`);
-  shRTDBListener.on('value', snap => {
-    const data = snap.val();
-    if (!data) return;
+      // Update status bar
+      updateESP32Status(true, data.bulb_hall);
 
-    // Update status bar
-    updateESP32Status(true, data.bulb_hall);
-
-    // Update device states from Firebase
-    house.rooms.forEach(room => {
-      room.devices.forEach(dev => {
-        if (data[dev.id]) {
-          dev.state = data[dev.id].state === true;
-          if (data[dev.id].power_w) dev.watts = data[dev.id].power_w;
-        }
+      // Update device states from Firebase
+      house.rooms.forEach(room => {
+        room.devices.forEach(dev => {
+          if (data[dev.id]) {
+            dev.state = data[dev.id].state === true;
+            if (data[dev.id].power_w) dev.watts = data[dev.id].power_w;
+          }
+        });
       });
+
+      renderSmartHome();
+      const lastUp = document.getElementById('sh-last-update');
+      if (lastUp) lastUp.textContent = 'Last update: ' + new Date().toLocaleTimeString();
     });
-
-    renderSmartHome();
-    set('sh-last-update', 'Last update: '+new Date().toLocaleTimeString());
-  });
-}
-
-function updateESP32Status(connected, bulbData) {
-  const dot   = document.getElementById('sh-dot');
-  const label = document.getElementById('sh-esp-label');
-  const sub   = document.getElementById('sh-esp-sub');
-  const liveW = document.getElementById('sh-live-w');
-  const liveV = document.getElementById('sh-live-v');
-  const liveA = document.getElementById('sh-live-a');
-  const liveC = document.getElementById('sh-live-co2');
-
-  if (connected) {
-    if (dot)   { dot.style.opacity = '1'; dot.style.background = 'var(--emerald)'; }
-    if (label) label.textContent = '⚡ ESP32 Connected — Live data streaming';
-    if (sub)   sub.textContent = 'ACS712 + Voltage sensor active';
-    if (bulbData) {
-      if (liveW) liveW.textContent = (bulbData.power_w || 0).toFixed(1) + 'W';
-      if (liveV) liveV.textContent = (bulbData.voltage_v || 230).toFixed(1) + 'V';
-      if (liveA) liveA.textContent = (bulbData.current_a || 0).toFixed(3) + 'A';
-      if (liveC) liveC.textContent = ((bulbData.power_w||0) * 0.7 / 1000).toFixed(4) + ' kg';
-      // Update live bar on bulb card
-      const bar = document.getElementById('sh-live-bar-bulb_hall');
-      if (bar) bar.textContent = `Live: ${(bulbData.power_w||0).toFixed(1)}W · ${(bulbData.current_a||0).toFixed(3)}A`;
-    }
   } else {
-    if (dot)   dot.style.opacity = '0.3';
-    if (label) label.textContent = 'ESP32 — Not Connected';
-    if (sub)   sub.textContent = 'Waiting for device...';
+    // Demo mode
+    simulateBulbData(house.id);
   }
 }
 
-function simulateBulbData(houseId) {
-  // Only simulate for TN-CH-001 bulb for demo
-  if (houseId !== 'TN-CH-001') return;
-  let t = 0;
-  if (window._bulbSim) clearInterval(window._bulbSim);
-  window._bulbSim = setInterval(() => {
-    t++;
-    const house = SH_HOUSES[0];
-    const bulbRoom = house.rooms[0];
-    const bulb = bulbRoom.devices.find(d => d.id === 'bulb_hall');
-    if (!bulb || !bulb.state) {
-      updateESP32Status(false);
-      return;
-    }
-    // Simulate realistic 60W bulb with slight variation
-    const power = 60 + Math.sin(t*0.3) * 2;
-    const voltage = 230 + Math.sin(t*0.1) * 3;
-    const current = power / voltage;
-    bulb.watts = Math.round(power);
-
-    updateESP32Status(true, {
-      power_w: power, voltage_v: voltage, current_a: current
-    });
-
-    // Update electricity tracker
-    const elecEl = document.getElementById('v-elec');
-    if (elecEl) {
-      const kwhSoFar = parseFloat(elecEl.textContent) || 0;
-      elecEl.textContent = (kwhSoFar + power/1000/1200).toFixed(3);
-    }
-
-    document.getElementById('sh-last-update').textContent =
-      'Last update: ' + new Date().toLocaleTimeString() + ' (demo)';
-  }, 3000);
+// ═══ WIFI POPUP ═══
+let _wifiPopupShown = false;
+function showWifiPopup(deviceId, houseId) {
+  const overlay = document.getElementById('wifi-overlay');
+  const popup   = document.getElementById('wifi-popup');
+  const msg     = document.getElementById('wifi-popup-msg');
+  if (msg) msg.innerHTML = `ESP32 connected to <b style="color:var(--emerald)">${houseId}</b><br>Device: <b>${deviceId}</b><br>Live sensor data is now streaming.`;
+  if (overlay) overlay.classList.add('show');
+  if (popup)   popup.classList.add('show');
+  _wifiPopupShown = true;
 }
-
-
+function closeWifiPopup() {
+  document.getElementById('wifi-overlay')?.classList.remove('show');
+  document.getElementById('wifi-popup')?.classList.remove('show');
+}
 
 // ═══ TOAST ═══
 function toast(icon,msg){const t=document.getElementById('toast');document.getElementById('t-icon').textContent=icon;document.getElementById('t-msg').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500)}
@@ -2503,6 +2565,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+const rtdb = firebase.database();
 
 console.log("✅ Firebase connected!");
 
