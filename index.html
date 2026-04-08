@@ -427,8 +427,22 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 
     <!-- ══ DASHBOARD ══ -->
     <div id="sub-dashboard" class="content">
-      <div class="section-title">Dashboard <span style="font-size:13px;font-weight:400;color:var(--muted)" id="dash-date"></span></div>
-      <div class="section-sub">House <span id="dash-hid" style="color:var(--lime);font-weight:700">TN-CH-001</span> · <span id="dash-members">4 members</span> · <span id="dash-vehs">3 vehicles</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+        <div>
+          <div class="section-title" style="margin-bottom:2px">Dashboard <span style="font-size:13px;font-weight:400;color:var(--muted)" id="dash-date"></span></div>
+          <div class="section-sub" style="margin-bottom:0">House <span id="dash-hid" style="color:var(--lime);font-weight:700">TN-CH-001</span> · <span id="dash-members">4 members</span> · <span id="dash-vehs">3 vehicles</span></div>
+        </div>
+        <button class="btn-sm" onclick="runFullDemo()" style="background:linear-gradient(135deg,#7c3aed,#8b5cf6);box-shadow:0 0 20px rgba(139,92,246,0.4);display:flex;align-items:center;gap:6px;padding:11px 18px">⚡ Run Full Demo</button>
+      </div>
+      <!-- DEMO PROGRESS BAR (shows during demo) -->
+      <div id="demo-progress-bar" style="display:none;margin-bottom:14px;padding:12px 16px;background:linear-gradient(135deg,rgba(139,92,246,0.12),rgba(52,211,100,0.08));border:1px solid rgba(139,92,246,0.3);border-radius:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:700;color:var(--violet)">⚡ Demo Mode Running...</div>
+          <div style="font-size:11px;color:var(--muted)" id="demo-step-lbl">Step 1 / 5</div>
+        </div>
+        <div style="height:5px;background:var(--bg3);border-radius:3px;overflow:hidden"><div id="demo-pbar" style="height:100%;background:linear-gradient(90deg,var(--violet),var(--emerald));width:0%;transition:width .6s"></div></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px" id="demo-step-desc">Initialising demo data...</div>
+      </div>
       <div class="kpi-row">
         <div class="kpi"><div class="kpi-glow" style="background:var(--rose)"></div><div class="kpi-lbl">Total Emission</div><div class="kpi-num" style="color:var(--rose)" id="kpi-e">5.5</div><div class="kpi-unit">kg CO₂ today</div><div class="kpi-chip cr">↑ 8% vs yesterday</div></div>
         <div class="kpi"><div class="kpi-glow" style="background:var(--amber)"></div><div class="kpi-lbl">Reduction</div><div class="kpi-num" style="color:var(--amber)" id="kpi-r">1.4</div><div class="kpi-unit">kg via solar</div><div class="kpi-chip ct">☀️ Solar active</div></div>
@@ -447,7 +461,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
         <div class="card"><div class="wt">Source Share</div><div class="cbox" style="height:170px;margin-top:8px"><canvas id="c-pie"></canvas></div></div>
         <div class="card"><div class="wt">Monthly Spend <span class="scope-tag s3">Scope 3</span></div><div class="cbox" style="height:170px;margin-top:8px"><canvas id="c-spend"></canvas></div></div>
         <div class="card" style="text-align:center"><div class="wt" style="justify-content:center">Sustainability Score</div>
-          <div style="font-family:'Cabinet Grotesk',sans-serif;font-size:60px;font-weight:900;color:var(--emerald);line-height:1;margin-top:12px">78</div>
+          <div style="font-family:'Cabinet Grotesk',sans-serif;font-size:60px;font-weight:900;color:var(--emerald);line-height:1;margin-top:12px" id="dash-score">78</div>
           <div style="font-size:12px;color:var(--muted);margin:6px 0 12px">/ 100 · <span style="color:var(--lime)">Good household</span></div>
           <div style="background:var(--bg2);border-radius:11px;padding:11px;font-size:12px;color:var(--muted);line-height:1.7">⬆️ +5 pts this week<br>💡 Reduce AC → −0.3 kg/day</div>
         </div>
@@ -517,8 +531,13 @@ await setDoc(doc(db, <span class="val">"users"</span>, ownerPhone), {<br>
 
     <!-- ══ MEMBERS MANAGEMENT ══ -->
     <div id="sub-members" class="content" style="display:none">
-      <div class="section-title">👥 Member Management</div>
-      <div class="section-sub">Add, manage, and link phone numbers to House ID <span id="mem-hid" style="color:var(--lime);font-weight:700">TN-CH-001</span> — each member's activities auto-aggregate</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <div>
+          <div class="section-title" style="margin-bottom:2px">👥 Member Management</div>
+          <div class="section-sub" style="margin-bottom:0">Add, manage, and link phone numbers to House ID <span id="mem-hid" style="color:var(--lime);font-weight:700">TN-CH-001</span></div>
+        </div>
+        <button class="btn-sm" onclick="quickAddDemoMember()" style="display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#1e3a5f,var(--cyan));box-shadow:0 0 18px rgba(34,211,238,0.3)">👤 Quick Add Demo Member</button>
+      </div>
 
       <div class="tab-row">
         <button class="tab-btn active" onclick="switchMemberTab(this,'existing')">Current Members</button>
@@ -808,8 +827,20 @@ onValue(ref(rtdb,<span class="val">`gps/${houseId}`</span>),(snap)=>{<br>
 
     <!-- ══ TRACK ══ -->
     <div id="sub-track" class="content" style="display:none">
-      <div class="section-title">⚡ Track Activity</div>
-      <div class="section-sub">All data auto-links to House ID <span id="track-hid" style="color:var(--lime);font-weight:700">TN-CH-001</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <div>
+          <div class="section-title" style="margin-bottom:2px">⚡ Track Activity</div>
+          <div class="section-sub" style="margin-bottom:0">All data auto-links to House ID <span id="track-hid" style="color:var(--lime);font-weight:700">TN-CH-001</span></div>
+        </div>
+        <button class="btn-sm" onclick="autofillTrack()" style="display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#0c4a6e,var(--sky));box-shadow:0 0 18px rgba(56,189,248,0.35)">🔄 Autofill Demo Data</button>
+      </div>
+      <!-- AUTOFILL PREVIEW BANNER -->
+      <div id="track-autofill-banner" style="display:none;margin-bottom:14px;padding:12px 16px;background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.25);border-radius:13px;animation:fadeIn .4s">
+        <div style="font-size:12px;font-weight:700;color:var(--sky);margin-bottom:6px">✅ Demo Data Loaded — Simulating a typical household's monthly activity</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--muted)">
+          <span>⚡ 150 kWh electricity</span><span>·</span><span>☀️ 42 kWh solar</span><span>·</span><span>🔥 1.2 LPG cylinders</span><span>·</span><span>⛽ 18L petrol</span><span>·</span><span>🛒 ₹2400 grocery</span><span>·</span><span>🌿 3 plants</span>
+        </div>
+      </div>
       <div class="g2" style="margin-bottom:14px">
         <div class="card">
           <div class="wt">⚡ Electricity <span class="badge bl"><span class="live-dot"></span>IoT</span></div>
@@ -881,8 +912,20 @@ onValue(ref(rtdb,<span class="val">`gps/${houseId}`</span>),(snap)=>{<br>
 
     <!-- ══ QR & SCAN ══ -->
     <div id="sub-qrcodes" class="content" style="display:none">
-      <div class="section-title">📱 QR Codes & Bill Scanner</div>
-      <div class="section-sub">House ID <span id="qr-hid" style="color:var(--lime);font-weight:700">TN-CH-001</span> · Scan any bill QR code or barcode · Auto-fills Track & Grocery tabs</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <div>
+          <div class="section-title" style="margin-bottom:2px">📱 QR Codes & Bill Scanner</div>
+          <div class="section-sub" style="margin-bottom:0">House ID <span id="qr-hid" style="color:var(--lime);font-weight:700">TN-CH-001</span> · Scan any bill QR code or barcode</div>
+        </div>
+      </div>
+
+      <!-- DEMO SCAN BUTTONS ROW -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding:14px;background:rgba(52,211,100,0.04);border:1px solid rgba(52,211,100,0.15);border-radius:14px">
+        <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;width:100%;margin-bottom:4px">🎬 Demo Mode — Click to simulate a bill scan:</div>
+        <button class="btn-sm" onclick="demoScanElecBill()" style="background:linear-gradient(135deg,#713f12,var(--amber));flex:1;min-width:140px">⚡ Scan Electricity Bill</button>
+        <button class="btn-sm" onclick="demoScanPetrolBill()" style="background:linear-gradient(135deg,#0c4a6e,var(--sky));flex:1;min-width:140px">⛽ Scan Petrol Receipt</button>
+        <button class="btn-sm" onclick="demoScanGrocBill()" style="background:linear-gradient(135deg,#14532d,var(--emerald));flex:1;min-width:140px">🛒 Scan Grocery Bill</button>
+      </div>
 
       <!-- SCANNER LIVE CARD -->
       <div class="card" style="margin-bottom:14px;border-color:rgba(52,211,100,0.3)">
@@ -917,7 +960,7 @@ onValue(ref(rtdb,<span class="val">`gps/${houseId}`</span>),(snap)=>{<br>
 
         <!-- SCAN RESULT -->
         <div id="scan-result" style="padding:14px;background:var(--bg2);border-radius:12px;font-size:12px;color:var(--muted);min-height:60px;line-height:1.8">
-          Tap "Start Camera Scan" to scan a QR code or barcode from any bill, or upload a bill photo...
+          Tap a demo button above, or use "Start Camera Scan" to scan a real QR/barcode from a bill...
         </div>
       </div>
 
@@ -1165,8 +1208,13 @@ onValue(ref(rtdb,<span class="val">`gps/${houseId}`</span>),(snap)=>{<br>
 
     <!-- ══ CREDITS ══ -->
     <div id="sub-credits" class="content" style="display:none">
-      <div class="section-title">💰 Credits & Rewards</div>
-      <div class="section-sub">House <span id="cr-hid" style="color:var(--lime);font-weight:700">TN-CH-001</span> · Immutable ledger</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <div>
+          <div class="section-title" style="margin-bottom:2px">💰 Credits & Rewards</div>
+          <div class="section-sub" style="margin-bottom:0">House <span id="cr-hid" style="color:var(--lime);font-weight:700">TN-CH-001</span> · Immutable ledger</div>
+        </div>
+        <button class="btn-sm" onclick="autofillCredits()" style="display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#14532d,var(--emerald));box-shadow:0 0 18px rgba(52,211,100,0.35)">🎁 Demo: Earn Credits</button>
+      </div>
       <div class="cr-hero">
         <div style="font-size:10px;color:rgba(240,253,244,0.4);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Total Balance</div>
         <div class="cr-big" id="cr-bal">24.6</div>
@@ -1190,8 +1238,13 @@ onValue(ref(rtdb,<span class="val">`gps/${houseId}`</span>),(snap)=>{<br>
 
     <!-- ══ INSIGHTS ══ -->
     <div id="sub-insights" class="content" style="display:none">
-      <div class="section-title">💡 Consumption Insights</div>
-      <div class="section-sub">Live breakdown · Monthly trends · Personalised reduction plan</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <div>
+          <div class="section-title" style="margin-bottom:2px">💡 Consumption Insights</div>
+          <div class="section-sub" style="margin-bottom:0">Live breakdown · Monthly trends · Personalised reduction plan</div>
+        </div>
+        <button class="btn-sm" onclick="autofillInsights()" style="display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#1a1040,var(--violet));box-shadow:0 0 18px rgba(139,92,246,0.35)">📊 Load Demo Insights</button>
+      </div>
 
       <!-- SCORE + QUICK STATS -->
       <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,#0f3320,#1a2a1e);border-color:rgba(52,211,100,0.3)">
@@ -3747,6 +3800,254 @@ document.addEventListener('DOMContentLoaded', () => {
   const md = document.getElementById('manual-date');
   if (md) md.value = new Date().toISOString().split('T')[0];
 });
+
+// ════════════════════════════════════════════════════════════════
+// ══ AUTOFILL SYSTEM — Every Tab has a Demo Fill ══
+// ════════════════════════════════════════════════════════════════
+
+// ── DEMO DATA SETS ──
+const DEMO_BILLS = {
+  electricity: { category:'electricity', provider:'TNEB', units:150, amount_rs:890, co2_kg:105, period:'March 2026', account:'0421-4567-8901', tariff:'LT-1A Domestic' },
+  petrol:      { category:'transport', fuel:'petrol', litres:18, amount_rs:1980, dist_km:720, co2_kg:41.4, station:'HP Petrol — Anna Nagar', vehicle:'TN09AB1234' },
+  lpg:         { category:'lpg', provider:'Indane', cylinders:1.2, amount_rs:1084, co2_kg:50.4, booking:'HP-20240322-7841' },
+  grocery:     { category:'grocery', items:'Rice 5kg, Toor Dal 2kg, Atta 5kg, Cooking Oil 2L, Tomatoes 2kg, Onion 3kg, Milk 4L, Eggs 2doz, Bread 2, Curd 500g, Paneer 500g, Green Tea, Turmeric, Coriander', amount_rs:2400, store:'Reliance Smart — T Nagar', co2_kg:12.0 },
+};
+
+const DEMO_MEMBERS = [
+  { name:'Priya Kumar',   phone:'9123456780', role:'member', relation:'Spouse',  color:'#38bdf8' },
+  { name:'Arjun Kumar',   phone:'9234567890', role:'member', relation:'Child',   color:'#fbbf24' },
+  { name:'Kavitha R',     phone:'9345678901', role:'viewer', relation:'Parent',  color:'#8b5cf6' },
+  { name:'Suresh Kumar',  phone:'9456789012', role:'member', relation:'Sibling', color:'#f97316' },
+];
+
+// ── AUTOFILL TRACK TAB ──
+function autofillTrack() {
+  // Electricity
+  const rElec = document.getElementById('r-elec');
+  if (rElec) { rElec.value = 15; updR('elec', 15); }
+  // Solar
+  const rSolar = document.getElementById('r-solar');
+  if (rSolar) { rSolar.value = 6; updR('solar', 6); }
+  // Solar toggle on
+  const tSolar = document.getElementById('t-solar');
+  if (tSolar && !tSolar.classList.contains('on')) tSolar.classList.add('on');
+  // LPG
+  const vLpg = document.getElementById('v-lpg');
+  if (vLpg) vLpg.textContent = '1';
+  // Fuel
+  const rFuel = document.getElementById('r-fuel');
+  if (rFuel) { rFuel.value = 18; updR('fuel', 18); }
+  // Grocery
+  const vGrocery = document.getElementById('v-grocery');
+  if (vGrocery) vGrocery.value = '2400';
+  // Plants
+  const vPlants = document.getElementById('v-plants');
+  if (vPlants) vPlants.textContent = '3';
+  // Show banner
+  const banner = document.getElementById('track-autofill-banner');
+  if (banner) { banner.style.display = 'block'; }
+  // Auto calculate
+  setTimeout(() => { calcAll(); }, 400);
+  toast('🔄', 'Track autofilled — typical household month!');
+  // Also seed grocery bills
+  seedGrocData();
+}
+
+// ── AUTOFILL CREDITS TAB ──
+function autofillCredits() {
+  // Add demo credits to ledger
+  const demoEntries = [
+    { date: fmtDate(-1), act:'⚡ Low electricity day', earned:2.4, used:0 },
+    { date: fmtDate(-2), act:'🛒 Grocery bill scanned', earned:0.6, used:0 },
+    { date: fmtDate(-3), act:'⛽ Carpool — fuel saved', earned:3.2, used:0 },
+    { date: fmtDate(-5), act:'🌿 3 plants verified', earned:1.5, used:0 },
+    { date: fmtDate(-6), act:'💡 Electricity bill discount', earned:0, used:5.0 },
+    { date: fmtDate(-7), act:'☀️ Solar offset bonus', earned:4.0, used:0 },
+    { date: fmtDate(-8), act:'🔥 LPG bill logged', earned:1.2, used:0 },
+    { date: fmtDate(-10), act:'🏭 Sold to industry (ESG)', earned:12.0, used:0 },
+    { date: fmtDate(-12), act:'🌾 PDS ration redeemed', earned:0, used:3.0 },
+    { date: fmtDate(-14), act:'🏅 Monthly mission bonus', earned:5.0, used:0 },
+  ];
+  APP.ledger = [...demoEntries, ...APP.ledger.slice(0,4)];
+  // Update balance
+  const earned = demoEntries.reduce((t,e)=>t+e.earned,0);
+  const used = demoEntries.reduce((t,e)=>t+e.used,0);
+  APP.balance = (APP.balance||24.6) + earned - used;
+  const h = APP.houses[APP.currentHouse];
+  h.credits = APP.balance;
+  const crEl = document.getElementById('cr-bal');
+  if (crEl) crEl.textContent = APP.balance.toFixed(1);
+  renderLedger();
+  toast('💰', `Demo credits loaded! Balance: ${APP.balance.toFixed(1)} GC`);
+}
+
+function fmtDate(daysOffset) {
+  const d = new Date(); d.setDate(d.getDate()+daysOffset);
+  return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
+}
+
+// ── AUTOFILL INSIGHTS TAB ──
+function autofillInsights() {
+  // Pre-fill track values first
+  const vals = { elec:150, solar:42, lpg:1, fuel:18, grocery:2400, plants:3 };
+  const rElec = document.getElementById('r-elec');
+  if (rElec) { rElec.value = vals.elec/10; updR('elec', vals.elec/10); }
+  const rSolar = document.getElementById('r-solar');
+  if (rSolar) { rSolar.value = vals.solar/10; updR('solar', vals.solar/10); }
+  const vLpg = document.getElementById('v-lpg'); if (vLpg) vLpg.textContent = vals.lpg;
+  const rFuel = document.getElementById('r-fuel'); if (rFuel) { rFuel.value = vals.fuel; updR('fuel', vals.fuel); }
+  const vGroc = document.getElementById('v-grocery'); if (vGroc) vGroc.value = vals.grocery;
+  setTimeout(()=>{ calcAll(); updateInsights(); }, 300);
+  toast('📊', 'Insights populated with demo data!');
+}
+
+// ── QUICK ADD DEMO MEMBER ──
+function quickAddDemoMember() {
+  const h = APP.houses[APP.currentHouse];
+  const remaining = DEMO_MEMBERS.filter(dm => !h.memberList.find(m => m.phone === dm.phone));
+  if (remaining.length === 0) {
+    toast('👥', 'All demo members already added!');
+    switchMemberTab(document.querySelector('.tab-btn'), 'existing');
+    return;
+  }
+  const dm = remaining[0];
+  h.memberList.push({ ...dm, status:'active', added:'just now' });
+  h.members = h.memberList.length;
+  const dm2 = document.getElementById('dash-members'); if(dm2) dm2.textContent = h.members+' members';
+  const badge = document.getElementById('member-count-badge'); if(badge) badge.textContent = h.members+' members';
+  renderMembersList();
+  // Switch to existing tab to show new member
+  const tabs = document.querySelectorAll('#tp-existing, #tp-add, #tp-link, #tp-firebase');
+  tabs.forEach(t=>t.classList.remove('active'));
+  const et = document.getElementById('tp-existing'); if(et) et.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+  toast('✅', `${dm.name} added as ${dm.role}!`);
+  // Try Firestore
+  try {
+    db.collection('users').doc('+91'+dm.phone).set({
+      phone:'+91'+dm.phone, name:dm.name, house_id:h.id,
+      role:dm.role, relation:dm.relation, status:'active',
+      added_by:APP.phone, joined_at:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    db.collection('houses').doc(h.id).update({
+      member_phones:firebase.firestore.FieldValue.arrayUnion('+91'+dm.phone),
+      member_count:h.members
+    });
+  } catch(e) {}
+}
+
+// ── FULL DEMO RUNNER (Dashboard button) ──
+async function runFullDemo() {
+  const steps = [
+    { pct:10, label:'Step 1 / 5 — Loading Houses', desc:'Switching between 3 registered households...', action: ()=>{ toast('🏡','Demo: Showing house TN-CH-001 → TN-CB-002 → KA-BL-001'); } },
+    { pct:30, label:'Step 2 / 5 — Scanning Bill', desc:'Simulating QR scan of electricity + grocery bills...', action: ()=>{ simulateScanDemo(); } },
+    { pct:50, label:'Step 3 / 5 — Track Autofill', desc:'Filling all consumption data automatically...', action: ()=>{ autofillTrack(); } },
+    { pct:75, label:'Step 4 / 5 — Updating Dashboard', desc:'Carbon calculation complete — syncing to Firebase...', action: ()=>{ calcAll(); initDashCharts(); renderEmiList(); } },
+    { pct:100, label:'Step 5 / 5 — Credits Earned', desc:'Demo complete! Credits updated. Ready to present 🎉', action: ()=>{ autofillCredits(); const sc=document.getElementById('dash-score'); if(sc){ sc.textContent='84'; sc.style.color='var(--lime)'; } } },
+  ];
+
+  const bar = document.getElementById('demo-pbar');
+  const lbl = document.getElementById('demo-step-lbl');
+  const desc = document.getElementById('demo-step-desc');
+  const prog = document.getElementById('demo-progress-bar');
+  if (!prog) return;
+  prog.style.display = 'block';
+
+  for (let i = 0; i < steps.length; i++) {
+    const s = steps[i];
+    if (lbl) lbl.textContent = s.label;
+    if (desc) desc.textContent = s.desc;
+    if (bar) bar.style.width = s.pct + '%';
+    s.action();
+    await new Promise(r => setTimeout(r, 1600));
+  }
+  setTimeout(()=>{ if(prog) prog.style.display='none'; toast('🎉','Full demo complete! All tabs are populated.'); }, 800);
+}
+
+// ── SIMULATE SCAN DEMO (for use in runFullDemo) ──
+function simulateScanDemo() {
+  const resultEl = document.getElementById('scan-result');
+  if (!resultEl) return;
+  // Simulate a parsed electricity bill scan
+  const billData = DEMO_BILLS.electricity;
+  resultEl.innerHTML = `
+    <div style="padding:14px;background:rgba(52,211,100,0.06);border:1px solid rgba(52,211,100,0.2);border-radius:12px;animation:fadeIn .4s">
+      <div style="font-size:14px;font-weight:800;color:var(--emerald);margin-bottom:12px">⚡ DEMO SCAN — Electricity Bill Detected!</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:12px">
+        <div style="color:var(--muted)">Provider</div><div style="color:var(--text2);font-weight:700">${billData.provider}</div>
+        <div style="color:var(--muted)">Account No.</div><div style="color:var(--text2);font-weight:700">${billData.account}</div>
+        <div style="color:var(--muted)">Tariff</div><div style="color:var(--text2);font-weight:700">${billData.tariff}</div>
+        <div style="color:var(--muted)">Period</div><div style="color:var(--text2);font-weight:700">${billData.period}</div>
+        <div style="color:var(--muted)">Units Consumed</div><div style="color:var(--amber);font-weight:800">${billData.units} kWh</div>
+        <div style="color:var(--muted)">Amount Due</div><div style="color:var(--lime);font-weight:800">₹${billData.amount_rs}</div>
+        <div style="color:var(--muted)">CO₂ Generated</div><div style="color:var(--rose);font-weight:800">${billData.co2_kg} kg</div>
+        <div style="color:var(--muted)">Saved to</div><div style="color:var(--emerald)">✅ Grocery Tab + Track</div>
+      </div>
+      <div style="padding:10px;background:rgba(251,191,36,0.08);border-radius:9px;font-size:11px;color:var(--amber)">
+        📋 Also detected grocery bill: Reliance Smart — ₹2,400 · 14 items · 12.0 kg CO₂
+      </div>
+    </div>`;
+  // Save both to grocery tab
+  saveBillToGroc({ cat:'electricity', amount:billData.amount_rs, units:billData.units, items:'', desc:`${billData.provider} Bill — ${billData.period}`, date:new Date().toISOString().split('T')[0] });
+  saveBillToGroc({ cat:'grocery', amount:DEMO_BILLS.grocery.amount_rs, units:0, items:DEMO_BILLS.grocery.items, desc:`${DEMO_BILLS.grocery.store}`, date:new Date().toISOString().split('T')[0] });
+  // Autofill track
+  const rElec = document.getElementById('r-elec'); if(rElec) { rElec.value=15; updR('elec',15); }
+  const vGroc = document.getElementById('v-grocery'); if(vGroc) vGroc.value=DEMO_BILLS.grocery.amount_rs;
+}
+
+// ── SCAN TAB: Demo scan button ──
+function demoScanElecBill() {
+  simulateScanDemo();
+  toast('⚡', 'Electricity bill auto-scanned!');
+}
+
+function demoScanPetrolBill() {
+  const billData = DEMO_BILLS.petrol;
+  const resultEl = document.getElementById('scan-result');
+  if (!resultEl) return;
+  resultEl.innerHTML = `
+    <div style="padding:14px;background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.2);border-radius:12px;animation:fadeIn .4s">
+      <div style="font-size:14px;font-weight:800;color:var(--sky);margin-bottom:12px">⛽ DEMO SCAN — Petrol Bill Detected!</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:12px">
+        <div style="color:var(--muted)">Station</div><div style="color:var(--text2);font-weight:700">${billData.station}</div>
+        <div style="color:var(--muted)">Vehicle</div><div style="color:var(--text2);font-weight:700">${billData.vehicle}</div>
+        <div style="color:var(--muted)">Fuel Type</div><div style="color:var(--text2);font-weight:700">Petrol (⛽)</div>
+        <div style="color:var(--muted)">Litres Filled</div><div style="color:var(--sky);font-weight:800">${billData.litres} L</div>
+        <div style="color:var(--muted)">Amount Paid</div><div style="color:var(--lime);font-weight:800">₹${billData.amount_rs}</div>
+        <div style="color:var(--muted)">Distance covered</div><div style="color:var(--text2);font-weight:700">${billData.dist_km} km</div>
+        <div style="color:var(--muted)">CO₂ Emitted</div><div style="color:var(--rose);font-weight:800">${billData.co2_kg} kg</div>
+        <div style="color:var(--muted)">Saved to</div><div style="color:var(--emerald)">✅ Grocery Tab + Track</div>
+      </div>
+    </div>`;
+  saveBillToGroc({ cat:'petrol', amount:billData.amount_rs, units:billData.litres, items:'', desc:`${billData.station} — ${billData.vehicle}`, date:new Date().toISOString().split('T')[0] });
+  const rFuel = document.getElementById('r-fuel'); if(rFuel) { rFuel.value=billData.litres; updR('fuel',billData.litres); }
+  toast('⛽', `Petrol bill: ${billData.litres}L · ₹${billData.amount_rs}`);
+}
+
+function demoScanGrocBill() {
+  const billData = DEMO_BILLS.grocery;
+  const resultEl = document.getElementById('scan-result');
+  if (!resultEl) return;
+  const items = billData.items.split(',').slice(0,8);
+  resultEl.innerHTML = `
+    <div style="padding:14px;background:rgba(52,211,100,0.06);border:1px solid rgba(52,211,100,0.2);border-radius:12px;animation:fadeIn .4s">
+      <div style="font-size:14px;font-weight:800;color:var(--emerald);margin-bottom:12px">🛒 DEMO SCAN — Grocery Bill Detected!</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:12px">
+        <div style="color:var(--muted)">Store</div><div style="color:var(--text2);font-weight:700">${billData.store}</div>
+        <div style="color:var(--muted)">Total Amount</div><div style="color:var(--lime);font-weight:800">₹${billData.amount_rs}</div>
+        <div style="color:var(--muted)">Items Count</div><div style="color:var(--text2);font-weight:700">14 items</div>
+        <div style="color:var(--muted)">CO₂ (Scope 3)</div><div style="color:var(--rose);font-weight:800">${billData.co2_kg} kg</div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:1px">Items Detected:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px">
+        ${items.map(i=>`<span style="padding:3px 9px;background:rgba(52,211,100,0.1);border:1px solid rgba(52,211,100,0.2);border-radius:20px;font-size:11px;color:var(--text2);font-weight:600">${i.trim()}</span>`).join('')}
+        <span style="padding:3px 9px;background:rgba(52,211,100,0.06);border-radius:20px;font-size:11px;color:var(--muted)">+6 more...</span>
+      </div>
+    </div>`;
+  saveBillToGroc({ cat:'grocery', amount:billData.amount_rs, units:0, items:billData.items, desc:billData.store, date:new Date().toISOString().split('T')[0] });
+  const vGroc = document.getElementById('v-grocery'); if(vGroc) vGroc.value = billData.amount_rs;
+  toast('🛒', `Grocery: ${items.length}+ items · ₹${billData.amount_rs}`);
+}
 </script>
 </body>
 </html>
