@@ -3193,33 +3193,59 @@ function sendOTP() {
 }
 
 // ── REPLACE verifyOTP() ──
-function verifyOTP() {
-  const otp = [...document.querySelectorAll('.otp-box')].map(b => b.value).join('');
-  if (otp.length < 6) { toast('⚠️', 'Enter 6-digit OTP'); return; }
 
-  window.confirmationResult.confirm(otp)
-    .then(async result => {
-      const phone = result.user.phoneNumber; // e.g. "+919150232577"
+async function verifyOTP() {
+  const otp = [...document.querySelectorAll('.otp-box')]
+    .map(box => box.value)
+    .join('');
 
-      // Check Firestore if this user has a house
-      const userDoc = await db.collection('users').doc(phone).get();
+  if (otp.length !== 6) {
+    toast('⚠️', 'Enter 6-digit OTP');
+    return;
+  }
 
-      if (userDoc.exists) {
-        // Existing user — load their house
-        const { house_id, name } = userDoc.data();
-        toast('🎉', 'Welcome back, ' + (name || 'there') + '!');
-        await loadUserHouse(house_id);
-      } else {
-        // New user — send to house registration
-        toast('👋', 'Welcome! Let\'s set up your house.');
-        showNewUserSetup(phone);
-      }
-    })
-    .catch(err => {
-      console.error(err);
-      toast('❌', 'Wrong OTP. Try again.');
-    });
+  // STEP 1: Verify the OTP using Firebase Authentication
+  let result;
+
+  try {
+    if (!window.confirmationResult) {
+      toast('⚠️', 'Request a new OTP first.');
+      return;
+    }
+
+    result = await window.confirmationResult.confirm(otp);
+    console.log('OTP verified successfully.');
+  } catch (err) {
+    console.error('OTP verification failed:', err.code, err.message);
+    toast('❌', 'OTP verification failed. Check the code and try again.');
+    return;
+  }
+
+  // STEP 2: Look up the user in Firestore separately
+  const phone = result.user.phoneNumber;
+
+  try {
+    const userDoc = await db.collection('users').doc(phone).get();
+
+    if (userDoc.exists) {
+      const { house_id, name } = userDoc.data();
+      toast('🎉', 'Welcome back, ' + (name || 'there') + '!');
+      await loadUserHouse(house_id);
+    } else {
+      toast('👋', 'OTP verified. Setting up your account.');
+      showNewUserSetup(phone);
+    }
+  } catch (err) {
+    console.error('Firestore lookup failed:', err.code, err.message);
+
+    toast(
+      '⚠️',
+      'OTP verified, but database access failed: ' +
+      (err.code || err.message)
+    );
+  }
 }
+
 
 // ── LOAD EXISTING USER'S HOUSE ──
 async function loadUserHouse(houseId) {
